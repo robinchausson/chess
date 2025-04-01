@@ -14,10 +14,10 @@ class Globals {
   
   
   //Couleurs
-  Color backgroundColor = const Color.fromARGB(255, 27, 38, 59);
-  Color blanc = const Color.fromARGB(225, 224, 225, 221);
-  Color bleuClair = const Color.fromARGB(225, 119, 141, 1695);
-  Color bleuFonce = const Color.fromARGB(225, 65, 90, 119);
+  Color backgroundColor = const Color.fromARGB(255, 13, 27, 42);
+  Color blanc = const Color.fromARGB(255, 224, 225, 221);
+  Color bleuClair = const Color.fromARGB(255, 119, 141, 1695);
+  Color bleuFonce = const Color.fromARGB(255, 65, 90, 119);
 
   //Images
 
