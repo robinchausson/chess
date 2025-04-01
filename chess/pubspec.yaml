@@ -53,7 +53,22 @@ dev_dependencies:
 flutter:
   assets:
     - assets/logo-echec.png
-    - assets/podium.jpg
+    - assets/podium.png
+    #Pièces blanches
+    - assets/pieces/blanc/pion_blanc.png
+    - assets/pieces/blanc/cavalier_blanc.png
+    - assets/pieces/blanc/fou_blanc.png
+    - assets/pieces/blanc/roi_blanc.png 
+    - assets/pieces/blanc/reine_blanc.png
+    - assets/pieces/blanc/tour_blanc.png
+    #Pièces noires
+    - assets/pieces/noir/pion_noir.png
+    - assets/pieces/noir/cavalier_noir.png
+    - assets/pieces/noir/fou_noir.png
+    - assets/pieces/noir/roi_noir.png
+    - assets/pieces/noir/reine_noir.png
+    - assets/pieces/noir/tour_noir.png
+
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

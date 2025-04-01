@@ -30,27 +30,31 @@ class _AccueilState extends State<Accueil> {
               Row(
                 children: [
                   // Podium
-                  Padding(
-                    padding:EdgeInsets.only(left: 5, right: 40), // Marges à gauche et à droite
-                    child :GestureDetector(
+                Container(
+                  // Alignement du podium
+                  alignment: Alignment.topLeft,
+                  padding: EdgeInsets.only(left: 10, top: 10), // Marges à gauche et en haut
+                  child: GestureDetector(
                     onTap: () {
                       Navigator.pushNamed(context, '/podium');
                     },
                     child: Image.asset(
-                      'assets/podium.jpg',
-                      width: 70, // Largeur
-                      height: 70, //Longueur
-                    ),
+                      'assets/podium.png', // Chemin vers votre image
+                      width: 50, // Largeur
+                      height: 50, // Longueur
                     ),
                   ),
-                  Align(alignment: Alignment.center,
-                  // Logo du jeu
-                    child: Image.asset(
-                      'assets/logo-echec.png', // Chemin vers votre logo
-                      width: 120, // Largeur du logo
-                      height: 100, // Hauteur du logo
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 10, right: 50), // Alignement en haut au centre
+                    child: Image(
+                      width: 100, // Largeur du logo
+                      height: 120, // Hauteur du logo
+                      image: Globals().logo, // Chemin vers le logo
                     ),
-                  ),            
+                  ),
+                ),
                 ],
               ),
 
@@ -152,7 +156,7 @@ class _AccueilState extends State<Accueil> {
                     ),
     
 
-                    // Pions d'échecs
+                    // Choix du joueur
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -160,26 +164,56 @@ class _AccueilState extends State<Accueil> {
                           width: 150,
                           height: 150,
                           color: Globals().bleuFonce,
-                            child: ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                              backgroundColor: Globals().bleuFonce,
-                              ),
-                              child: null,
-                            ),
+                          child: ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Globals().bleuFonce,
+                            padding: EdgeInsets.zero, // Remove padding for better alignment
                           ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                            Padding(
+                              padding: EdgeInsets.only(top: 10), // Add padding to move the image to the top
+                              child: Image(
+                              image: Globals().pionBlanc,
+                              width: 40,
+                              height: 40,
+                              alignment: Alignment.topCenter,
+                              ),
+                            ),
+                            ],
+                          ),
+                          ),
+                        ),
+                          
                         
                         Container(
                           width: 150,
                           height: 150,
-                          color: Globals().bleuClair,             
-                            child: ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                              backgroundColor:  Globals().bleuClair,
-                              ), child: null,
-                            ),
+                          color: Globals().bleuClair,
+                          child: ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Globals().bleuClair,
+                            padding: EdgeInsets.zero, // Remove padding for better alignment
                           ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                            Padding(
+                              padding: EdgeInsets.only(top: 10), // Add padding to move the image to the top
+                              child: Image(
+                              image: Globals().pionNoir,
+                              width: 40,
+                              height: 40,
+                              alignment: Alignment.topCenter,
+                              ),
+                            ),
+                            ],
+                          ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -192,7 +226,7 @@ class _AccueilState extends State<Accueil> {
                   Navigator.pushNamed(context, '/jeu');
                 },
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: const Color.fromARGB(255, 162, 15, 5), backgroundColor: Globals().blanc,
+                  foregroundColor: Globals().rouge, backgroundColor: Globals().blanc,
                 ),
                 child: Text(
                   'JOUER',
