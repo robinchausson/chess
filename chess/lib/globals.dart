@@ -18,6 +18,7 @@ class Globals {
   Color blanc = const Color.fromARGB(255, 224, 225, 221);
   Color bleuClair = const Color.fromARGB(255, 119, 141, 1695);
   Color bleuFonce = const Color.fromARGB(255, 65, 90, 119);
+  Color rouge = const Color.fromARGB(255, 162, 15, 5);
 
   //Images
 

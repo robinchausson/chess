@@ -12,10 +12,6 @@ class Accueil extends StatefulWidget {
 
 class _AccueilState extends State<Accueil> {
 
-  
-
-  
-
   @override
  Widget build(BuildContext context) {
     return MaterialApp(
@@ -192,7 +188,7 @@ class _AccueilState extends State<Accueil> {
                   Navigator.pushNamed(context, '/jeu');
                 },
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: const Color.fromARGB(255, 162, 15, 5), backgroundColor: Globals().blanc,
+                  foregroundColor: Globals().rouge, backgroundColor: Globals().blanc,
                 ),
                 child: Text(
                   'JOUER',
