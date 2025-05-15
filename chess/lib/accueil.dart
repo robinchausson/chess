@@ -9,6 +9,10 @@ class Accueil extends StatefulWidget {
 }
 
 class _AccueilState extends State<Accueil> {
+  String nomJoueurBlanc = ''; 
+  String nomJoueurNoir = ''; 
+  String classementBlanc = '';
+  String classementNoir = '';
   String selectedMode = 'normale'; // normale, blanc, noir
   int selectedTime = 3; // 3, 10, 60
 
@@ -350,13 +354,16 @@ class _AccueilState extends State<Accueil> {
                 onPressed: () {
                   Navigator.pushNamed(
                     context,
-                    '/jeu',
+                      '/jeu',
                     arguments: {
-                      'mode': selectedMode,
-                      'temps': selectedTime,
-                      'joueur1': joueur1,
-                      'joueur2': joueur2,
-                    },
+                      'joueurBlanc': joueur1!['pseudo'],
+                      'joueurNoir': joueur2!['pseudo'],
+                      'classementBlanc': classementBlanc,
+                      'classementNoir': classementNoir,
+                      'temps': selectedTime, 
+                      'mode': selectedMode,   
+                  },
+                    
                   );
                 },
                 style: ElevatedButton.styleFrom(
