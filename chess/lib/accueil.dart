@@ -161,7 +161,9 @@ class _AccueilState extends State<Accueil> {
                           height: 150,
                           color: Globals().bleuFonce,
                           child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/gestionJoueur');
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Globals().bleuFonce,
                             padding: EdgeInsets.zero, // Remove padding for better alignment

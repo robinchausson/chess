@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'DatabaseHelper.dart';  // Assure-toi que ce fichier est bien importé
+import 'databaseHelper.dart';  // Assure-toi que ce fichier est bien importé
 
 class GestionJoueur extends StatefulWidget {
   const GestionJoueur({super.key});
@@ -14,14 +14,14 @@ class _GestionJoueurState extends State<GestionJoueur> {
   @override
   void initState() {
     super.initState();
-    _loadPlayers();
   }
 
-  Future<void> _loadPlayers() async {
-    final dbHelper = DatabaseHelper.instance;
-    final players = await dbHelper.getUsers(); // Appelle la méthode pour récupérer les joueurs
-    setState(() {
-      _players = players;
+
+  Future<void> AjouterJoueur(String pseudo) async {
+    final db = await DatabaseHelper.instance.database;
+    await db.insert('joueur', {
+      'pseudo': pseudo,
+      'date_creation': DateTime.now().toIso8601String(),
     });
   }
 
@@ -29,19 +29,48 @@ class _GestionJoueurState extends State<GestionJoueur> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Gestion des Joueurs")),
-      body: _players.isEmpty
-          ? const Center(child: Text("Aucun joueur enregistré"))
-          : ListView.builder(
-              itemCount: _players.length,
-              itemBuilder: (context, index) {
-                final player = _players[index];
-                return ListTile(
-                  title: Text(player['name']),
-                  subtitle: Text("Âge: ${player['age']}"),
-                  leading: CircleAvatar(child: Text(player['name'][0])),
-                );
+      body: 
+      Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () async {
+                // Exemple d'ajout d'un joueur
+                await AjouterJoueur("apEX");
+                // Rafraîchir la liste des joueurs après ajout
+                setState(() {});
               },
+              child: const Text("Ajouter Joueur"),
             ),
+            // Afficher la liste des joueurs ici
+            Expanded(
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: DatabaseHelper.instance.database.then((db) => db.query('joueur')),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Erreur : ${snapshot.error}');
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Text('Aucun joueur trouvé');
+                  } else {
+                    _players = snapshot.data!;
+                    return ListView.builder(
+                      itemCount: _players.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text(_players[index]['pseudo']),
+                        );
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

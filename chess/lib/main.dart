@@ -6,10 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:chess/databaseHelper.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-void main() {
+void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-  final dbHelper = DatabaseHelper.instance;
-
+  await DatabaseHelper.instance.database;
   runApp(const MyApp());
 }
 
@@ -27,7 +26,6 @@ class MyApp extends StatelessWidget {
         '/podium': (context) => Podium(), // Page de podium
         '/jeu': (context) => Jeu(), // Page de jeu
         '/gestionJoueur': (context) => GestionJoueur(), // Page de gestion des joueurs
-
       },
       debugShowCheckedModeBanner: false,
       home: const Accueil(),

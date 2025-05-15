@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
+
   static Database? _database;
 
   DatabaseHelper._init();
@@ -13,53 +14,68 @@ class DatabaseHelper {
     return _database!;
   }
 
-  Future<Database> _initDB(String fileName) async {
+  Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, fileName);
+    final path = join(dbPath, filePath);
 
     return await openDatabase(
       path,
       version: 1,
-      onCreate: _onCreate,
+      onCreate: _createDB,
     );
   }
 
-  Future<void> _onCreate(Database db, int version) async {
+  Future _createDB(Database db, int version) async {
+    // Table joueur
     await db.execute('''
-      CREATE TABLE users (
+      CREATE TABLE joueur (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        age INTEGER NOT NULL
-      )
+        pseudo TEXT NOT NULL,
+        date_creation TEXT NOT NULL
+      );
     ''');
+
+    // Table partie
+    await db.execute('''
+      CREATE TABLE partie (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_joueur1 INTEGER NOT NULL,
+        id_joueur2 INTEGER NOT NULL,
+        date_creation TEXT NOT NULL,
+        FOREIGN KEY (id_joueur1) REFERENCES joueur (id),
+        FOREIGN KEY (id_joueur2) REFERENCES joueur (id)
+      );
+    ''');
+
+    // Table victoire
+    await db.execute('''
+      CREATE TABLE victoire (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_joueur INTEGER NOT NULL,
+        id_partie INTEGER,
+        date TEXT NOT NULL,
+        FOREIGN KEY (id_joueur) REFERENCES joueur (id),
+        FOREIGN KEY (id_partie) REFERENCES partie (id)
+      );
+    ''');
+
+    // Table defaite
+    await db.execute('''
+      CREATE TABLE defaite (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_joueur INTEGER NOT NULL,
+        id_partie INTEGER,
+        date TEXT NOT NULL,
+        FOREIGN KEY (id_joueur) REFERENCES joueur (id),
+        FOREIGN KEY (id_partie) REFERENCES partie (id)
+      );
+    ''');
+
+     print('Creating database...');
   }
 
-  Future<void> close() async {
-    final db = await database;
+  Future close() async {
+    final db = await instance.database;
     db.close();
-  }
-
-  // Ajouter un utilisateur
-  Future<int> addUser(String name, int age) async {
-    final db = await database;
-    return await db.insert('users', {'name': name, 'age': age});
-  }
-  
-  // Lire tous les utilisateurs
-  Future<List<Map<String, dynamic>>> getUsers() async {
-    final db = await database;
-    return await db.query('users');
-  }
-  
-  // Mettre à jour un utilisateur
-  Future<int> updateUser(int id, String name, int age) async {
-    final db = await database;
-    return await db.update('users', {'name': name, 'age': age}, where: 'id = ?', whereArgs: [id]);
-  }
-  
-  // Supprimer un utilisateur
-  Future<int> deleteUser(int id) async {
-    final db = await database;
-    return await db.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 }
