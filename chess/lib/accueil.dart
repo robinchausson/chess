@@ -12,6 +12,22 @@ class _AccueilState extends State<Accueil> {
   String selectedMode = 'normale'; // normale, blanc, noir
   int selectedTime = 3; // 3, 10, 60
 
+  Map<String, dynamic>? joueur1;
+  Map<String, dynamic>? joueur2;
+
+  Future<void> selectionnerJoueur(bool estJoueur1) async {
+    final joueur = await Navigator.pushNamed(context, '/gestionJoueur');
+    if (joueur != null && joueur is Map<String, dynamic>) {
+      setState(() {
+        if (estJoueur1) {
+          joueur1 = joueur;
+        } else {
+          joueur2 = joueur;
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -20,36 +36,40 @@ class _AccueilState extends State<Accueil> {
         backgroundColor: Globals().backgroundColor,
         body: SafeArea(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // En-tête
-              Row(
+              // En-tête avec podium à gauche et logo parfaitement centré
+              Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  Container(
-                    alignment: Alignment.topLeft,
-                    padding: EdgeInsets.only(left: 10, top: 10),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/podium');
-                      },
-                      child: Image.asset(
-                        'assets/podium.png',
-                        width: 50,
-                        height: 50,
-                      ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/podium');
+                  },
+                  child: Image.asset(
+                    'assets/podium.png',
+                    width: 50,
+                    height: 50,
+                  ),
+                  ),
+                ),
+                Center(
+                  child: Container(
+                  height: 120,
+                  width: 140,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                    image: const AssetImage('assets/logo-echec.png'),
+                    fit: BoxFit.contain,
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 10, right: 50),
-                      child: Image(
-                        width: 100,
-                        height: 120,
-                        image: Globals().logo,
-                      ),
-                    ),
                   ),
+                ),
                 ],
+              ),
               ),
 
               SizedBox(height: 20),
@@ -57,191 +77,271 @@ class _AccueilState extends State<Accueil> {
               // Corps
               Expanded(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
+                    children: [
                     // Partie Normale
                     Row(
                       children: [
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 13, right: 13),
-                            child: ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  selectedMode = 'normale';
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                foregroundColor: Globals().backgroundColor,
-                                backgroundColor: selectedMode == 'normale'
-                                    ? Colors.greenAccent
-                                    : Globals().blanc,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              child: Text('Partie Normale'),
-                            ),
+                      Expanded(
+                        child: Padding(
+                        padding: EdgeInsets.only(left: 13, right: 13, bottom: 10, top: 30),
+                        child: ElevatedButton(
+                          onPressed: () {
+                          setState(() {
+                            selectedMode = 'normale';
+                          });
+                          },
+                          style: ElevatedButton.styleFrom(
+                          foregroundColor: selectedMode == 'normale'
+                            ? Globals().blanc
+                            : Globals().backgroundColor,
+                          backgroundColor: selectedMode == 'normale'
+                            ? Globals().rouge
+                            : Globals().blanc,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
+                          ),
+                          child: Text('Partie Normale'),
                         ),
+                        ),
+                      ),
                       ],
                     ),
 
                     // Avantager Blanc / Noir
-                    Row(
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 40.0),
+                      child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        ElevatedButton(
+                        SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.45,
+                        child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              selectedMode = 'blanc';
-                            });
+                          setState(() {
+                            selectedMode = 'blanc';
+                          });
                           },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: selectedMode == 'blanc'
-                                ? Colors.greenAccent
-                                : Globals().bleuClair,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 30, vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                          foregroundColor: Globals().blanc,
+                          backgroundColor: selectedMode == 'blanc'
+                            ? Globals().rouge
+                            : Globals().bleuClair,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 0, vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text('Avantager Blanc'),
+                          ),
+                          child: Text('Avantagé Blanc'),
                         ),
-                        ElevatedButton(
+                        ),
+                        SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.45,
+                        child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              selectedMode = 'noir';
-                            });
+                          setState(() {
+                            selectedMode = 'noir';
+                          });
                           },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.black,
-                            backgroundColor: selectedMode == 'noir'
-                                ? Colors.greenAccent
-                                : Globals().bleuFonce,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 30, vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                          foregroundColor: Globals().blanc,
+                          backgroundColor: selectedMode == 'noir'
+                            ? Globals().rouge
+                            : Globals().bleuFonce,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 0, vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text('Avantager Noir'),
+                          ),
+                          child: Text('Avantagé Noir'),
+                        ),
                         ),
                       ],
+                      ),
                     ),
 
                     // Durée
-                    Row(
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 40.0),
+                      child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        ElevatedButton(
+                        SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.29,
+                        child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              selectedTime = 3;
-                            });
+                          setState(() {
+                            selectedTime = 3;
+                          });
                           },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Globals().backgroundColor,
-                            backgroundColor: selectedTime == 3
-                                ? Colors.greenAccent
-                                : Globals().blanc,
+                          foregroundColor: selectedTime == 3
+                            ? Globals().blanc
+                            : Globals().backgroundColor,
+                          backgroundColor: selectedTime == 3
+                            ? Globals().rouge
+                            : Globals().blanc,
                           ),
                           child: Text('3min'),
                         ),
-                        ElevatedButton(
+                        ),
+                        SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.29,
+                        child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              selectedTime = 10;
-                            });
+                          setState(() {
+                            selectedTime = 10;
+                          });
                           },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Globals().backgroundColor,
-                            backgroundColor: selectedTime == 10
-                                ? Colors.greenAccent
-                                : Globals().blanc,
+                          foregroundColor: selectedTime == 10
+                            ? Globals().blanc
+                            : Globals().backgroundColor,
+                          backgroundColor: selectedTime == 10
+                            ? Globals().rouge
+                            : Globals().blanc,
                           ),
                           child: Text('10min'),
                         ),
-                        ElevatedButton(
+                        ),
+                        SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.29,
+                        child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              selectedTime = 60;
-                            });
+                          setState(() {
+                            selectedTime = 60;
+                          });
                           },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Globals().backgroundColor,
-                            backgroundColor: selectedTime == 60
-                                ? Colors.greenAccent
-                                : Globals().blanc,
+                          foregroundColor: selectedTime == 60
+                            ? Globals().blanc
+                            : Globals().backgroundColor,
+                          backgroundColor: selectedTime == 60
+                            ? Globals().rouge
+                            : Globals().blanc,
                           ),
                           child: Text('60min'),
                         ),
+                        ),
                       ],
+                      ),
                     ),
 
-                    // Choix pion
+                    // Choix des joueurs
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Container(
-                          width: 150,
-                          height: 150,
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.45,
+                        child: Container(
+                        height: 150,
+                        decoration: BoxDecoration(
                           color: Globals().bleuFonce,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/gestionJoueur');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Globals().bleuFonce,
-                              padding: EdgeInsets.zero,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                          selectionnerJoueur(true); // joueur1
+                          },
+                          style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          ),
+                          child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                            Image(
+                              image: Globals().pionBlanc,
+                              width: 40,
+                              height: 40,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.only(top: 10),
-                                  child: Image(
-                                    image: Globals().pionBlanc,
-                                    width: 40,
-                                    height: 40,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            if (joueur1 != null)
+                              Padding(
+                              padding: EdgeInsets.only(top: 20),
+                              child: Text(
+                                joueur1!['pseudo'],
+                                style: TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                              ),
+                            if (joueur1 == null)
+                              Padding(
+                              padding: EdgeInsets.only(top: 20),
+                              child: Text(
+                                'Sélectionner',
+                                style: TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                              ),
+                            ],
+                          ),
                           ),
                         ),
-                        Container(
-                          width: 150,
-                          height: 150,
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.45,
+                        child: Container(
+                        height: 150,
+                        decoration: BoxDecoration(
                           color: Globals().bleuClair,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/gestionJoueur');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Globals().bleuClair,
-                              padding: EdgeInsets.zero,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                          selectionnerJoueur(false); // joueur2
+                          },
+                          style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          ),
+                          child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                            Image(
+                              image: Globals().pionNoir,
+                              width: 40,
+                              height: 40,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.only(top: 10),
-                                  child: Image(
-                                    image: Globals().pionNoir,
-                                    width: 40,
-                                    height: 40,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            if (joueur2 != null)
+                              Padding(
+                              padding: EdgeInsets.only(top: 20),
+                              child: Text(
+                                joueur2!['pseudo'],
+                                style: TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                              ),
+                            if (joueur2 == null)
+                              Padding(
+                              padding: EdgeInsets.only(top: 20),
+                              child: Text(
+                                'Sélectionner',
+                                style: TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                              ),
+                            ],
+                          ),
                           ),
                         ),
+                        ),
+                      ),
                       ],
                     ),
-                  ],
+                    ],
                 ),
               ),
 
@@ -254,6 +354,8 @@ class _AccueilState extends State<Accueil> {
                     arguments: {
                       'mode': selectedMode,
                       'temps': selectedTime,
+                      'joueur1': joueur1,
+                      'joueur2': joueur2,
                     },
                   );
                 },
@@ -262,7 +364,7 @@ class _AccueilState extends State<Accueil> {
                   backgroundColor: Globals().blanc,
                 ),
                 child: Text(
-                  'JOUER',
+                  'Lancer la partie',
                   style: TextStyle(fontSize: 20),
                 ),
               ),

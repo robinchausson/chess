@@ -15,30 +15,12 @@ class _PodiumState extends State<Podium> {
   @override
   void initState() {
     super.initState();
-    fetchClassement();
-  }
 
-  Future<void> fetchClassement() async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db.rawQuery("""
-      SELECT joueur.pseudo, COUNT(victoire.id) as victoires
-      FROM joueur
-      LEFT JOIN victoire ON joueur.id = victoire.id_joueur
-      GROUP BY joueur.id
-      ORDER BY victoires DESC
-      LIMIT 10
-      """
-    );
-    setState(() {
-      topJoueurs = result;
-    });
-  }
-  
-  Future<void> AjouterVictoire(int idJoueur) async {
-    final db = await DatabaseHelper.instance.database;
-    await db.insert('victoire', {
-      'id_joueur': idJoueur,
-      'date': DateTime.now().toIso8601String(),
+      // On récupère les 10 meilleurs joueurs depuis la base de données
+    databaseHelper.instance.getJoueurs(limit: 10).then((joueurs) {
+      setState(() {
+        topJoueurs = joueurs;
+      });
     });
   }
 
@@ -87,7 +69,7 @@ class _PodiumState extends State<Podium> {
                   podiumColumn(
                     nom: topJoueurs[1]['pseudo'],
                     place: 2,
-                    victoires: topJoueurs[1]['victoires'],
+                    victoires: topJoueurs[1]['nb_victoires'],
                     height: 100,
                     color: Globals().bleuFonce,
                   ),
@@ -95,7 +77,7 @@ class _PodiumState extends State<Podium> {
                   podiumColumn(
                     nom: topJoueurs[0]['pseudo'],
                     place: 1,
-                    victoires: topJoueurs[0]['victoires'],
+                    victoires: topJoueurs[0]['nb_victoires'],
                     height: 140,
                     color: Globals().blanc,
                   ),
@@ -103,7 +85,7 @@ class _PodiumState extends State<Podium> {
                   podiumColumn(
                     nom: topJoueurs[2]['pseudo'],
                     place: 3,
-                    victoires: topJoueurs[2]['victoires'],
+                    victoires: topJoueurs[2]['nb_victoires'],
                     height: 80,
                     color: Globals().bleuClair,
                   ),
@@ -124,11 +106,11 @@ class _PodiumState extends State<Podium> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${index+1} | ${joueur['pseudo']}',
+                          '${index+1}. ${joueur['pseudo']}',
                           style: TextStyle(color: Globals().blanc, fontSize: 16),
                         ),
                         Text(
-                          '${joueur['victoires']} victoires',
+                          '${joueur['nb_victoires']} victoires',
                           style: TextStyle(color: Globals().blanc, fontSize: 16),
                         ),
                       ],

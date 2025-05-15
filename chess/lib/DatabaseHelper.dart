@@ -1,12 +1,12 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
-class DatabaseHelper {
-  static final DatabaseHelper instance = DatabaseHelper._init();
+class databaseHelper {
+  static final databaseHelper instance = databaseHelper._init();
 
   static Database? _database;
 
-  DatabaseHelper._init();
+  databaseHelper._init();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -77,5 +77,39 @@ class DatabaseHelper {
   Future close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  Future<List<Map<String, dynamic>>> getJoueurs({int limit = 0}) async {
+    final db = await database;
+    final limitClause = limit > 0 ? 'LIMIT $limit' : '';
+    return await db.rawQuery('''
+      SELECT joueur.id, joueur.pseudo, COUNT(victoire.id) AS nb_victoires
+      FROM joueur
+      LEFT JOIN victoire ON joueur.id = victoire.id_joueur
+      GROUP BY joueur.id
+      ORDER BY nb_victoires DESC
+      $limitClause
+    ''');
+  }
+
+  Future<int> insertJoueur(String pseudo) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+
+    // Vérifie si le pseudo existe déjà
+    final existing = await db.query(
+      'joueur',
+      where: 'pseudo = ?',
+      whereArgs: [pseudo],
+    );
+    if (existing.isNotEmpty) {
+      // Retourne -1 pour indiquer que le pseudo existe déjà
+      return -1;
+    }
+
+    return await db.insert('joueur', {
+      'pseudo': pseudo,
+      'date_creation': now,
+    });
   }
 }

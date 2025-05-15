@@ -8,7 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-  await DatabaseHelper.instance.database;
+  await databaseHelper.instance.database;
   runApp(const MyApp());
 }
 
@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         '/accueil': (context) => Accueil(), // Page d'accueil
         '/podium': (context) => Podium(), // Page de podium
         '/jeu': (context) => Jeu(), // Page de jeu
-        '/gestionJoueur': (context) => GestionJoueur(), // Page de gestion des joueurs
+        '/gestionJoueur': (context) => gestionJoueur(), // Page de gestion des joueurs
       },
       debugShowCheckedModeBanner: false,
       home: const Accueil(),
