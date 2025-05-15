@@ -9,8 +9,12 @@ class Accueil extends StatefulWidget {
 }
 
 class _AccueilState extends State<Accueil> {
-  String selectedMode = 'normale'; // normale, blanc, noir
-  int selectedTime = 3; // 3, 10, 60
+  String nomJoueurBlanc = ''; 
+  String nomJoueurNoir = ''; 
+  String classementBlanc = '';
+  String classementNoir = '';
+  int selectedTime = 0;
+  String selectedMode = '';
 
   @override
   Widget build(BuildContext context) {
@@ -250,12 +254,16 @@ class _AccueilState extends State<Accueil> {
                 onPressed: () {
                   Navigator.pushNamed(
                     context,
-                    '/jeu',
+                      '/jeu',
                     arguments: {
-                      'mode': selectedMode,
-                      'temps': selectedTime,
-                    },
-                  );
+                      'joueurBlanc': nomJoueurBlanc,
+                      'joueurNoir': nomJoueurNoir,
+                      'classementBlanc': classementBlanc,
+                      'classementNoir': classementNoir,
+                      'temps': selectedTime, 
+                      'mode': selectedMode,   
+                  },
+                );
                 },
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Globals().rouge,
