@@ -1,158 +1,187 @@
 import 'package:flutter/material.dart';
-import 'globals.dart';  
+import 'globals.dart';
 
 class Accueil extends StatefulWidget {
   const Accueil({super.key});
-
-
 
   @override
   State<Accueil> createState() => _AccueilState();
 }
 
 class _AccueilState extends State<Accueil> {
+  String selectedMode = 'normale'; // normale, blanc, noir
+  int selectedTime = 3; // 3, 10, 60
 
   @override
- Widget build(BuildContext context) {
+  Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Globals().backgroundColor, // Fond 
+        backgroundColor: Globals().backgroundColor,
         body: SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Section En-tête
+              // En-tête
               Row(
                 children: [
-                  // Podium
-                Container(
-                  // Alignement du podium
-                  alignment: Alignment.topLeft,
-                  padding: EdgeInsets.only(left: 10, top: 10), // Marges à gauche et en haut
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/podium');
-                    },
-                    child: Image.asset(
-                      'assets/podium.png', // Chemin vers votre image
-                      width: 50, // Largeur
-                      height: 50, // Longueur
+                  Container(
+                    alignment: Alignment.topLeft,
+                    padding: EdgeInsets.only(left: 10, top: 10),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/podium');
+                      },
+                      child: Image.asset(
+                        'assets/podium.png',
+                        width: 50,
+                        height: 50,
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 10, right: 50), // Alignement en haut au centre
-                    child: Image(
-                      width: 100, // Largeur du logo
-                      height: 120, // Hauteur du logo
-                      image: Globals().logo, // Chemin vers le logo
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 10, right: 50),
+                      child: Image(
+                        width: 100,
+                        height: 120,
+                        image: Globals().logo,
+                      ),
                     ),
                   ),
-                ),
                 ],
               ),
 
-              // Espacement entre l'en-tête et la section centrale
               SizedBox(height: 20),
 
-              // Section Centrale
+              // Corps
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
+                    // Partie Normale
                     Row(
                       children: [
                         Expanded(
-                          // Zone grise large
-                          child :Padding(
-                          padding:EdgeInsets.only(left: 13, right: 13), // Marges à gauche et à droite
-                          child: ElevatedButton(
-                            onPressed: () {
-                              
-                            },
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Globals().backgroundColor, // Couleur du texte
-                              backgroundColor: Globals().blanc, // Couleur du bouton
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20), // Coins arrondis
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 13, right: 13),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  selectedMode = 'normale';
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                foregroundColor: Globals().backgroundColor,
+                                backgroundColor: selectedMode == 'normale'
+                                    ? Colors.greenAccent
+                                    : Globals().blanc,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
                               ),
+                              child: Text('Partie Normale'),
                             ),
-                            child: Text('Partie Normale'), // Texte du bouton
-                          ),
                           ),
                         ),
                       ],
                     ),
-                
 
-                    // Deux blocs bleus horizontaux
+                    // Avantager Blanc / Noir
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
                           onPressed: () {
-                      
+                            setState(() {
+                              selectedMode = 'blanc';
+                            });
                           },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white, // Couleur du texte
-                            backgroundColor: Globals().bleuClair, // Couleur du bouton
-                            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15), // Taille
+                            foregroundColor: Colors.white,
+                            backgroundColor: selectedMode == 'blanc'
+                                ? Colors.greenAccent
+                                : Globals().bleuClair,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 30, vertical: 15),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20), // Coins arrondis
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          child: Text('Avantager Blanc'), // Texte du bouton
+                          child: Text('Avantager Blanc'),
                         ),
                         ElevatedButton(
                           onPressed: () {
-                      
+                            setState(() {
+                              selectedMode = 'noir';
+                            });
                           },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.black, // Couleur du texte
-                            backgroundColor: Globals().bleuFonce, // Couleur du bouton
-                            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15), // Taille
+                            foregroundColor: Colors.black,
+                            backgroundColor: selectedMode == 'noir'
+                                ? Colors.greenAccent
+                                : Globals().bleuFonce,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 30, vertical: 15),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20), // Coins arrondis
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          child: Text('Avantager Noir'), // Texte du bouton
-                        )
+                          child: Text('Avantager Noir'),
+                        ),
                       ],
                     ),
 
-                    // Options de durée
-                    
+                    // Durée
                     Row(
-                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,         
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            setState(() {
+                              selectedTime = 3;
+                            });
+                          },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Globals().backgroundColor, backgroundColor: Globals().blanc,
+                            foregroundColor: Globals().backgroundColor,
+                            backgroundColor: selectedTime == 3
+                                ? Colors.greenAccent
+                                : Globals().blanc,
                           ),
                           child: Text('3min'),
                         ),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            setState(() {
+                              selectedTime = 10;
+                            });
+                          },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Globals().backgroundColor, backgroundColor: Globals().blanc,
+                            foregroundColor: Globals().backgroundColor,
+                            backgroundColor: selectedTime == 10
+                                ? Colors.greenAccent
+                                : Globals().blanc,
                           ),
                           child: Text('10min'),
                         ),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            setState(() {
+                              selectedTime = 60;
+                            });
+                          },
                           style: ElevatedButton.styleFrom(
-                            foregroundColor: Globals().backgroundColor, backgroundColor: Globals().blanc,
+                            foregroundColor: Globals().backgroundColor,
+                            backgroundColor: selectedTime == 60
+                                ? Colors.greenAccent
+                                : Globals().blanc,
                           ),
                           child: Text('60min'),
                         ),
                       ],
                     ),
-    
 
-                    // Choix du joueur
+                    // Choix pion
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -161,53 +190,53 @@ class _AccueilState extends State<Accueil> {
                           height: 150,
                           color: Globals().bleuFonce,
                           child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Globals().bleuFonce,
-                            padding: EdgeInsets.zero, // Remove padding for better alignment
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                            Padding(
-                              padding: EdgeInsets.only(top: 10), // Add padding to move the image to the top
-                              child: Image(
-                              image: Globals().pionBlanc,
-                              width: 40,
-                              height: 40,
-                              alignment: Alignment.topCenter,
-                              ),
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/gestionJoueur');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Globals().bleuFonce,
+                              padding: EdgeInsets.zero,
                             ),
-                            ],
-                          ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(top: 10),
+                                  child: Image(
+                                    image: Globals().pionBlanc,
+                                    width: 40,
+                                    height: 40,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                          
-                        
                         Container(
                           width: 150,
                           height: 150,
                           color: Globals().bleuClair,
                           child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Globals().bleuClair,
-                            padding: EdgeInsets.zero, // Remove padding for better alignment
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                            Padding(
-                              padding: EdgeInsets.only(top: 10), // Add padding to move the image to the top
-                              child: Image(
-                              image: Globals().pionNoir,
-                              width: 40,
-                              height: 40,
-                              alignment: Alignment.topCenter,
-                              ),
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/gestionJoueur');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Globals().bleuClair,
+                              padding: EdgeInsets.zero,
                             ),
-                            ],
-                          ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(top: 10),
+                                  child: Image(
+                                    image: Globals().pionNoir,
+                                    width: 40,
+                                    height: 40,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -216,13 +245,21 @@ class _AccueilState extends State<Accueil> {
                 ),
               ),
 
-              // Bouton "JOUER"
+              // Bouton JOUER
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/jeu');
+                  Navigator.pushNamed(
+                    context,
+                    '/jeu',
+                    arguments: {
+                      'mode': selectedMode,
+                      'temps': selectedTime,
+                    },
+                  );
                 },
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Globals().rouge, backgroundColor: Globals().blanc,
+                  foregroundColor: Globals().rouge,
+                  backgroundColor: Globals().blanc,
                 ),
                 child: Text(
                   'JOUER',
@@ -235,6 +272,4 @@ class _AccueilState extends State<Accueil> {
       ),
     );
   }
-
-
 }
