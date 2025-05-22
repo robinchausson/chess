@@ -25,7 +25,7 @@ class _JeuState extends State<Jeu> {
 
   int? selectedRow;
   int? selectedCol;
-  Set<List<int>> validMoves = {};
+  List<List<int>> validMoves = [];
 
 @override
 void initState() {
@@ -110,6 +110,7 @@ List<List<int>> _getValidMoves(int row, int col, {bool ignoreTurn = false}) {
  
   if (isWhite != isWhiteTurn) return [];
 
+
   List<List<int>> moves = [];
 
   void tryAdd(int r, int c, {bool captureOnly = false}) {
@@ -117,8 +118,10 @@ List<List<int>> _getValidMoves(int row, int col, {bool ignoreTurn = false}) {
     String? target = board[r][c];
     if (target == null && !captureOnly) {
       moves.add([r, c]);
-    } else if (target != null && target.startsWith(isWhite ? 'b' : 'w')) {
-      moves.add([r, c]);
+    } else if (target != null &&
+        target.startsWith(isWhite ? 'b' : 'w') &&
+        !target.endsWith('k')) { // interdit de prendre le roi
+        moves.add([r, c]);
     }
   }
 
@@ -134,9 +137,10 @@ List<List<int>> _getValidMoves(int row, int col, {bool ignoreTurn = false}) {
         int newCol = col + dCol;
         if (newCol >= 0 && newCol < 8) {
           String? target = board[row + dir][newCol];
-          if (target != null && target.startsWith(isWhite ? 'b' : 'w')) {
+          if (target != null && target.startsWith(isWhite ? 'b' : 'w') && !target.endsWith('k')) { // interdit de prendre le roi
             moves.add([row + dir, newCol]);
           }
+          
         }
       }
       break;
@@ -178,10 +182,22 @@ List<List<int>> _getValidMoves(int row, int col, {bool ignoreTurn = false}) {
       }
       break;
     case 'q':
-      return [
-        ..._getValidMoves(row, col)..removeWhere((pos) => pos[0] == row || pos[1] == col),
-        ..._getValidMoves(row, col)..removeWhere((pos) => pos[0] != row && pos[1] != col),
-      ];
+      // Combine mouvements de la tour et du fou
+      for (var d in [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]) {
+        int r = row + d[0], c = col + d[1];
+        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+          String? target = board[r][c];
+          if (target == null) {
+            moves.add([r, c]);
+          } else {
+            if (target.startsWith(isWhite ? 'b' : 'w')) moves.add([r, c]);
+            break;
+          }
+          r += d[0];
+          c += d[1];
+        }
+      }
+      break;
     case 'k':
       for (var d in [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]) {
         tryAdd(row + d[0], col + d[1]);
@@ -318,38 +334,95 @@ bool _isInCheck(bool white) {
    return GestureDetector(
       onTap: () {
         setState(() {
-          if (selectedRow != null && validMoves.any((m) => m[0] == row && m[1] == col)) {
-            board[row][col] = board[selectedRow!][selectedCol!];
-            board[selectedRow!][selectedCol!] = null;
-            selectedRow = null;
-            selectedCol = null;
-            validMoves.clear();
-            isWhiteTurn = !isWhiteTurn;
-            bool kingInCheck = _isInCheck(!isWhiteTurn);
-            bool hasLegalMoves = false;
+          // Si une pièce est sélectionnée et la case cliquée fait partie des coups légaux
+          if (selectedRow != null && selectedCol != null) {
+            if (validMoves.any((m) => m[0] == row && m[1] == col)) {
+              String? target = board[row][col];
+              if (target != null && target.endsWith('k')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Impossible de prendre le roi !")),
+                );
+                return;
+              }
+              // Joue le coup
+              board[row][col] = board[selectedRow!][selectedCol!];
+              board[selectedRow!][selectedCol!] = null;
+              selectedRow = null;
+              selectedCol = null;
+              validMoves.clear();
+              isWhiteTurn = !isWhiteTurn;
+
+              // Affiche un message si le roi adverse est en échec
+              if (_isInCheck(!isWhiteTurn)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Roi en échec !"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+
+              // Vérifie échec et mat ou pat pour l'adversaire
+              bool kingInCheck = _isInCheck(!isWhiteTurn);
+              bool hasLegalMoves = false;
+              for (int r = 0; r < 8; r++) {
+                for (int c = 0; c < 8; c++) {
+                  if (board[r][c]?.startsWith(isWhiteTurn ? 'w' : 'b') ?? false) {
+                    if (_getLegalMoves(r, c).isNotEmpty) {
+                      hasLegalMoves = true;
+                      break;
+                    }
+                  }
+                }
+              }
+              if (kingInCheck && !hasLegalMoves) {
+                timer?.cancel();
+                _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
+              } else if (!kingInCheck && !hasLegalMoves) {
+                timer?.cancel();
+                _showEndDialog("Partie nulle", "Pat !");
+              }
+              return;
+            }
+          }
+
+          // Si on clique sur une pièce à soi, on ne propose QUE les coups légaux
+          if (board[row][col] != null &&
+              board[row][col]!.startsWith(isWhiteTurn ? 'w' : 'b')) {
+            // On ne permet la sélection que si la pièce a au moins un coup légal
+            List<List<int>> legal = _getLegalMoves(row, col);
+            if (legal.isNotEmpty) {
+              selectedRow = row;
+              selectedCol = col;
+              validMoves = legal;
+            } else {
+              // Si aucun coup légal, on ne sélectionne pas la pièce
+              selectedRow = null;
+              selectedCol = null;
+              validMoves.clear();
+            }
+
+            // Si le joueur est en échec et n'a aucun coup légal, partie terminée
+            bool anyLegal = false;
             for (int r = 0; r < 8; r++) {
               for (int c = 0; c < 8; c++) {
                 if (board[r][c]?.startsWith(isWhiteTurn ? 'w' : 'b') ?? false) {
                   if (_getLegalMoves(r, c).isNotEmpty) {
-                    hasLegalMoves = true;
+                    anyLegal = true;
                     break;
                   }
                 }
               }
             }
-            if (kingInCheck && !hasLegalMoves) {
+            if (!anyLegal) {
+              bool kingInCheck = _isInCheck(isWhiteTurn);
               timer?.cancel();
-              _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
-            } else if (kingInCheck) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Roi en échec !")),
-              );
+              if (kingInCheck) {
+                _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
+              } else {
+                _showEndDialog("Partie nulle", "Pat !");
+              }
             }
-          } else if (board[row][col] != null &&
-                    board[row][col]!.startsWith(isWhiteTurn ? 'w' : 'b')) {
-            selectedRow = row;
-            selectedCol = col;
-            validMoves = _getLegalMoves(row, col).toSet();
           } else {
             selectedRow = null;
             selectedCol = null;

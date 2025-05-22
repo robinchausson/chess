@@ -92,6 +92,16 @@ class databaseHelper {
     ''');
   }
 
+  Future<int> enregistrerVictoire(int idJoueur, int idPartie) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return await db.insert('victoire', {
+      'id_joueur': idJoueur,
+      'id_partie': idPartie,
+      'date': now,
+    });
+  }
+  
   Future<int> insertJoueur(String pseudo) async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
