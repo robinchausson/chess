@@ -22,7 +22,7 @@ class Globals {
 
   //Images
   //Pièces Blanches
-  AssetImage pionBlanc = const AssetImage('assets/pieces/blanc/pion_blanc.png');
+  AssetImage pionBlanc = const AssetImage('assets/pieces/blanc/pion_blanc.png'); 
   AssetImage tourBlanc = const AssetImage('assets/pieces/blanc/tour_blanc.png');
   AssetImage cavalierBlanc = const AssetImage('assets/pieces/blanc/cavalier_blanc.png');
   AssetImage fouBlanc = const AssetImage('assets/pieces/blanc/fou_blanc.png');
