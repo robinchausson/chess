@@ -27,32 +27,35 @@ class _JeuState extends State<Jeu> {
   int? selectedCol;
   List<List<int>> validMoves = [];
 
-@override
-void initState() {
-  super.initState();
-  _initBoard(); // seulement le plateau ici
-}
+  List<String> capturedWhite = [];
+  List<String> capturedBlack = [];
 
- @override
-void didChangeDependencies() {
-  super.didChangeDependencies();
-  final args = ModalRoute.of(context)?.settings.arguments as Map?;
-
-  if (args != null) {
-    joueurBlanc = args['joueurBlanc'] ?? 'Blanc';
-    joueurNoir = args['joueurNoir'] ?? 'Noir';
-    classementBlanc = int.tryParse(args['classementBlanc'].toString()) ?? 0;
-    classementNoir = int.tryParse(args['classementNoir'].toString()) ?? 0;
-    mode = args['mode'] ?? 'normale';
-
-    selectedTime = args['temps'] ?? 3;
-
-    whiteTime = Duration(minutes: selectedTime);
-    blackTime = Duration(minutes: selectedTime);
+  @override
+  void initState() {
+    super.initState();
+    _initBoard(); // seulement le plateau ici
   }
 
-  _startTimer();
-}
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map?;
+
+    if (args != null) {
+      joueurBlanc = args['joueurBlanc'] ?? 'Blanc';
+      joueurNoir = args['joueurNoir'] ?? 'Noir';
+      classementBlanc = int.tryParse(args['classementBlanc'].toString()) ?? 0;
+      classementNoir = int.tryParse(args['classementNoir'].toString()) ?? 0;
+      mode = args['mode'] ?? 'normale';
+
+      selectedTime = args['temps'] ?? 3;
+
+      whiteTime = Duration(minutes: selectedTime);
+      blackTime = Duration(minutes: selectedTime);
+    }
+
+    _startTimer();
+  }
 
   void _initBoard() {
     List<String> order = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
@@ -101,165 +104,165 @@ void didChangeDependencies() {
     );
   }
 
-List<List<int>> _getValidMoves(int row, int col, {bool ignoreTurn = false}) {
-  String? piece = board[row][col];
-  if (piece == null) return [];
-
-  bool isWhite = piece.startsWith('w');
-  if (!ignoreTurn && isWhite != isWhiteTurn) return [];
- 
-  if (isWhite != isWhiteTurn) return [];
-
-
-  List<List<int>> moves = [];
-
-  void tryAdd(int r, int c, {bool captureOnly = false}) {
-    if (r < 0 || r >= 8 || c < 0 || c >= 8) return;
-    String? target = board[r][c];
-    if (target == null && !captureOnly) {
-      moves.add([r, c]);
-    } else if (target != null &&
-        target.startsWith(isWhite ? 'b' : 'w') &&
-        !target.endsWith('k')) { // interdit de prendre le roi
-        moves.add([r, c]);
-    }
-  }
-
-  switch (piece.substring(1)) {
-    case 'p':
-      int dir = isWhite ? -1 : 1;
-      int startRow = isWhite ? 6 : 1;
-      if (board[row + dir][col] == null) moves.add([row + dir, col]);
-      if (row == startRow && board[row + dir][col] == null && board[row + 2 * dir][col] == null) {
-        moves.add([row + 2 * dir, col]);
-      }
-      for (int dCol in [-1, 1]) {
-        int newCol = col + dCol;
-        if (newCol >= 0 && newCol < 8) {
-          String? target = board[row + dir][newCol];
-          if (target != null && target.startsWith(isWhite ? 'b' : 'w') && !target.endsWith('k')) { // interdit de prendre le roi
-            moves.add([row + dir, newCol]);
-          }
-          
-        }
-      }
-      break;
-    case 'r':
-      for (var d in [[1,0], [-1,0], [0,1], [0,-1]]) {
-        int r = row + d[0], c = col + d[1];
-        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
-          String? target = board[r][c];
-          if (target == null) {
-            moves.add([r, c]);
-          } else {
-            if (target.startsWith(isWhite ? 'b' : 'w')) moves.add([r, c]);
-            break;
-          }
-          r += d[0];
-          c += d[1];
-        }
-      }
-      break;
-    case 'n':
-      for (var d in [[2,1], [2,-1], [-2,1], [-2,-1], [1,2], [1,-2], [-1,2], [-1,-2]]) {
-        tryAdd(row + d[0], col + d[1]);
-      }
-      break;
-    case 'b':
-      for (var d in [[1,1], [1,-1], [-1,1], [-1,-1]]) {
-        int r = row + d[0], c = col + d[1];
-        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
-          String? target = board[r][c];
-          if (target == null) {
-            moves.add([r, c]);
-          } else {
-            if (target.startsWith(isWhite ? 'b' : 'w')) moves.add([r, c]);
-            break;
-          }
-          r += d[0];
-          c += d[1];
-        }
-      }
-      break;
-    case 'q':
-      // Combine mouvements de la tour et du fou
-      for (var d in [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]) {
-        int r = row + d[0], c = col + d[1];
-        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
-          String? target = board[r][c];
-          if (target == null) {
-            moves.add([r, c]);
-          } else {
-            if (target.startsWith(isWhite ? 'b' : 'w')) moves.add([r, c]);
-            break;
-          }
-          r += d[0];
-          c += d[1];
-        }
-      }
-      break;
-    case 'k':
-      for (var d in [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]) {
-        tryAdd(row + d[0], col + d[1]);
-      }
-      break;
-  }
-
-  return moves;
-}
-
-
-List<List<int>> _getLegalMoves(int row, int col) {
-  List<List<int>> candidateMoves = _getValidMoves(row, col);
-  List<List<int>> legalMoves = [];
-
-  for (var move in candidateMoves) {
-    var backup = board[move[0]][move[1]];
+  List<List<int>> _getValidMoves(int row, int col, {bool ignoreTurn = false}) {
     String? piece = board[row][col];
+    if (piece == null) return [];
 
-    board[move[0]][move[1]] = piece;
-    board[row][col] = null;
-
-    bool stillInCheck = _isInCheck(piece!.startsWith('w'));
-
-    board[row][col] = piece;
-    board[move[0]][move[1]] = backup;
-
-    if (!stillInCheck) legalMoves.add(move);
-  }
-
-  return legalMoves;
-}
+    bool isWhite = piece.startsWith('w');
+    if (!ignoreTurn && isWhite != isWhiteTurn) return [];
+ 
+    if (isWhite != isWhiteTurn) return [];
 
 
-List<int>? _findKing(bool white) {
-  for (int r = 0; r < 8; r++) {
-    for (int c = 0; c < 8; c++) {
-      String? piece = board[r][c];
-      if (piece == (white ? 'wk' : 'bk')) return [r, c];
+    List<List<int>> moves = [];
+
+    void tryAdd(int r, int c, {bool captureOnly = false}) {
+      if (r < 0 || r >= 8 || c < 0 || c >= 8) return;
+      String? target = board[r][c];
+      if (target == null && !captureOnly) {
+        moves.add([r, c]);
+      } else if (target != null &&
+          target.startsWith(isWhite ? 'b' : 'w') &&
+          !target.endsWith('k')) { // interdit de prendre le roi
+          moves.add([r, c]);
+      }
     }
+
+    switch (piece.substring(1)) {
+      case 'p':
+        int dir = isWhite ? -1 : 1;
+        int startRow = isWhite ? 6 : 1;
+        if (board[row + dir][col] == null) moves.add([row + dir, col]);
+        if (row == startRow && board[row + dir][col] == null && board[row + 2 * dir][col] == null) {
+          moves.add([row + 2 * dir, col]);
+        }
+        for (int dCol in [-1, 1]) {
+          int newCol = col + dCol;
+          if (newCol >= 0 && newCol < 8) {
+            String? target = board[row + dir][newCol];
+            if (target != null && target.startsWith(isWhite ? 'b' : 'w') && !target.endsWith('k')) { // interdit de prendre le roi
+              moves.add([row + dir, newCol]);
+            }
+            
+          }
+        }
+        break;
+      case 'r':
+        for (var d in [[1,0], [-1,0], [0,1], [0,-1]]) {
+          int r = row + d[0], c = col + d[1];
+          while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            String? target = board[r][c];
+            if (target == null) {
+              moves.add([r, c]);
+            } else {
+              if (target.startsWith(isWhite ? 'b' : 'w')) moves.add([r, c]);
+              break;
+            }
+            r += d[0];
+            c += d[1];
+          }
+        }
+        break;
+      case 'n':
+        for (var d in [[2,1], [2,-1], [-2,1], [-2,-1], [1,2], [1,-2], [-1,2], [-1,-2]]) {
+          tryAdd(row + d[0], col + d[1]);
+        }
+        break;
+      case 'b':
+        for (var d in [[1,1], [1,-1], [-1,1], [-1,-1]]) {
+          int r = row + d[0], c = col + d[1];
+          while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            String? target = board[r][c];
+            if (target == null) {
+              moves.add([r, c]);
+            } else {
+              if (target.startsWith(isWhite ? 'b' : 'w')) moves.add([r, c]);
+              break;
+            }
+            r += d[0];
+            c += d[1];
+          }
+        }
+        break;
+      case 'q':
+        // Combine mouvements de la tour et du fou
+        for (var d in [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]) {
+          int r = row + d[0], c = col + d[1];
+          while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            String? target = board[r][c];
+            if (target == null) {
+              moves.add([r, c]);
+            } else {
+              if (target.startsWith(isWhite ? 'b' : 'w')) moves.add([r, c]);
+              break;
+            }
+            r += d[0];
+            c += d[1];
+          }
+        }
+        break;
+      case 'k':
+        for (var d in [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]) {
+          tryAdd(row + d[0], col + d[1]);
+        }
+        break;
+    }
+
+    return moves;
   }
-  return null;
-}
 
-bool _isInCheck(bool white) {
-  List<int>? kingPos = _findKing(white);
-  if (kingPos == null) return false;
 
-  for (int r = 0; r < 8; r++) {
-    for (int c = 0; c < 8; c++) {
-      String? piece = board[r][c];
-      if (piece != null && piece.startsWith(white ? 'b' : 'w')) {
-        var enemyMoves = _getValidMoves(r, c, ignoreTurn: true);
-        if (enemyMoves.any((m) => m[0] == kingPos[0] && m[1] == kingPos[1])) {
-          return true;
+  List<List<int>> _getLegalMoves(int row, int col) {
+    List<List<int>> candidateMoves = _getValidMoves(row, col);
+    List<List<int>> legalMoves = [];
+
+    for (var move in candidateMoves) {
+      var backup = board[move[0]][move[1]];
+      String? piece = board[row][col];
+
+      board[move[0]][move[1]] = piece;
+      board[row][col] = null;
+
+      bool stillInCheck = _isInCheck(piece!.startsWith('w'));
+
+      board[row][col] = piece;
+      board[move[0]][move[1]] = backup;
+
+      if (!stillInCheck) legalMoves.add(move);
+    }
+
+    return legalMoves;
+  }
+
+
+  List<int>? _findKing(bool white) {
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+        String? piece = board[r][c];
+        if (piece == (white ? 'wk' : 'bk')) return [r, c];
+      }
+    }
+    return null;
+  }
+
+  bool _isInCheck(bool white) {
+    List<int>? kingPos = _findKing(white);
+    if (kingPos == null) return false;
+
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+        String? piece = board[r][c];
+        if (piece != null && piece.startsWith(white ? 'b' : 'w')) {
+          var enemyMoves = _getValidMoves(r, c, ignoreTurn: true);
+          if (enemyMoves.any((m) => m[0] == kingPos[0] && m[1] == kingPos[1])) {
+            return true;
+          }
         }
       }
     }
-  }
 
-  return false;
-}
+    return false;
+  }
 
   void _handleProposerNul() {
     showDialog(
@@ -344,6 +347,14 @@ bool _isInCheck(bool white) {
                 );
                 return;
               }
+              // Ajoute la pièce capturée à la bonne liste
+              if (target != null) {
+                if (target.startsWith('w')) {
+                  capturedWhite.add(target);
+                } else if (target.startsWith('b')) {
+                  capturedBlack.add(target);
+                }
+              }
               // Joue le coup
               board[row][col] = board[selectedRow!][selectedCol!];
               board[selectedRow!][selectedCol!] = null;
@@ -389,7 +400,7 @@ bool _isInCheck(bool white) {
           // Si on clique sur une pièce à soi, on ne propose QUE les coups légaux
           if (board[row][col] != null &&
               board[row][col]!.startsWith(isWhiteTurn ? 'w' : 'b')) {
-            // On ne permet la sélection que si la pièce a au moins un coup légal
+            // On ne permet la sélection que si la pièce a au moins un coup légal (qui ne laisse pas le roi en échec)
             List<List<int>> legal = _getLegalMoves(row, col);
             if (legal.isNotEmpty) {
               selectedRow = row;
@@ -476,9 +487,8 @@ bool _isInCheck(bool white) {
     '${time.inMinutes.remainder(60).toString().padLeft(2, '0')}:'
     '${time.inSeconds.remainder(60).toString().padLeft(2, '0')}';
 
-    // exemple de capturedWhite
-    List<String> capturedWhite = ['wp', 'wp', 'wr', 'wn', 'wb'];
-    List<String> capturedBlack = ['bp', 'br', 'bn', 'bb', 'bq'];
+    // Utilise les vraies listes
+    List<String> captured = isTop ? capturedWhite : capturedBlack;
 
     Widget content = Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -486,31 +496,37 @@ bool _isInCheck(bool white) {
       Column(
         children: [
           const SizedBox(height: 8),
-            if (isTop && capturedWhite.isNotEmpty) ...[
-              SizedBox(
-          height: 64,
-          child: Wrap(
-            alignment: WrapAlignment.end, // align right
-            spacing: 2,
-            runSpacing: 8,
-            children: capturedWhite.map((piece) {
-              ImageProvider? img;
-              switch (piece) {
-                case 'wp': img = Globals().pionBlanc; break;
-                case 'wr': img = Globals().tourBlanc; break;
-                case 'wn': img = Globals().cavalierBlanc; break;
-                case 'wb': img = Globals().fouBlanc; break;
-                case 'wq': img = Globals().reineBlanc; break;
-                case 'wk': img = Globals().roiBlanc; break;
-              }
-              return img != null
-            ? Image(image: img, width: 24)
-            : const SizedBox.shrink();
-            }).toList(),
-          ),
+          if (captured.isNotEmpty) ...[
+            SizedBox(
+              height: 64,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 2,
+                runSpacing: 8,
+                children: captured.map((piece) {
+                  ImageProvider? img;
+                  switch (piece) {
+                    case 'wp': img = Globals().pionBlanc; break;
+                    case 'bp': img = Globals().pionNoir; break;
+                    case 'wr': img = Globals().tourBlanc; break;
+                    case 'br': img = Globals().tourNoir; break;
+                    case 'wn': img = Globals().cavalierBlanc; break;
+                    case 'bn': img = Globals().cavalierNoir; break;
+                    case 'wb': img = Globals().fouBlanc; break;
+                    case 'bb': img = Globals().fouNoir; break;
+                    case 'wq': img = Globals().reineBlanc; break;
+                    case 'bq': img = Globals().reineNoir; break;
+                    case 'wk': img = Globals().roiBlanc; break;
+                    case 'bk': img = Globals().roiNoir; break;
+                  }
+                  return img != null
+                    ? Image(image: img, width: 24)
+                    : const SizedBox.shrink();
+                }).toList(),
               ),
-            ] else if (!isTop && capturedBlack.isNotEmpty) ...[
-              SizedBox(
+            ),
+          ] else if (!isTop && capturedBlack.isNotEmpty) ...[
+            SizedBox(
           height: 64,
           child: Wrap(
             alignment: WrapAlignment.end, // align right
