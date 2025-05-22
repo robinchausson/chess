@@ -41,8 +41,8 @@ void didChangeDependencies() {
   if (args != null) {
     joueurBlanc = args['joueurBlanc'] ?? 'Blanc';
     joueurNoir = args['joueurNoir'] ?? 'Noir';
-    classementBlanc = int.tryParse(args['classementBlanc'].toString()) ?? 1300;
-    classementNoir = int.tryParse(args['classementNoir'].toString()) ?? 1200;
+    classementBlanc = int.tryParse(args['classementBlanc'].toString()) ?? 0;
+    classementNoir = int.tryParse(args['classementNoir'].toString()) ?? 0;
     mode = args['mode'] ?? 'normale';
 
     selectedTime = args['temps'] ?? 3;
@@ -292,8 +292,8 @@ bool _isInCheck(bool white) {
   }
 
   Widget _buildSquare(int row, int col) {
-    Color lightColor = const Color(0xFFBCE5C7);
-    Color darkColor = const Color(0xFF6F9E73);
+    Color lightColor = Globals().bleuClair;
+    Color darkColor = Globals().bleuFonce;
     bool isLight = (row + col) % 2 == 0;
     String? piece = board[row][col];
 
@@ -372,22 +372,19 @@ bool _isInCheck(bool white) {
   }
 
   Widget _buildBoard() {
-    return Expanded(
-      flex: 5,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: GridView.builder(
-            itemCount: 64,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
-            itemBuilder: (context, index) {
-              int row = index ~/ 8;
-              int col = index % 8;
-              return _buildSquare(row, col);
-            },
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 0),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: GridView.builder(
+          itemCount: 64,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
+          itemBuilder: (context, index) {
+            int row = index ~/ 8;
+            int col = index % 8;
+            return _buildSquare(row, col);
+          },
         ),
       ),
     );
@@ -406,27 +403,127 @@ bool _isInCheck(bool white) {
     '${time.inMinutes.remainder(60).toString().padLeft(2, '0')}:'
     '${time.inSeconds.remainder(60).toString().padLeft(2, '0')}';
 
-    return Padding(
+    // exemple de capturedWhite
+    List<String> capturedWhite = ['wp', 'wp', 'wr', 'wn', 'wb'];
+    List<String> capturedBlack = ['bp', 'br', 'bn', 'bb', 'bq'];
+
+    Widget content = Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
+      child: 
+      Column(
         children: [
-          Text(name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Globals().blanc)),
-          Text('Classement: $ranking', style: TextStyle(color: Globals().blanc, fontSize: 13)),
-          Text(formattedTime, style: TextStyle(fontSize: 18, color: Globals().rouge)),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(onPressed: onNul, child: const Text("Proposer le nul", style: TextStyle(fontSize: 12))),
-              ElevatedButton(onPressed: onAbandon, child: const Text("Abandonner", style: TextStyle(fontSize: 12))),
-            ],
+          const SizedBox(height: 8),
+            if (isTop && capturedWhite.isNotEmpty) ...[
+              SizedBox(
+          height: 64,
+          child: Wrap(
+            alignment: WrapAlignment.end, // align right
+            spacing: 2,
+            runSpacing: 8,
+            children: capturedWhite.map((piece) {
+              ImageProvider? img;
+              switch (piece) {
+                case 'wp': img = Globals().pionBlanc; break;
+                case 'wr': img = Globals().tourBlanc; break;
+                case 'wn': img = Globals().cavalierBlanc; break;
+                case 'wb': img = Globals().fouBlanc; break;
+                case 'wq': img = Globals().reineBlanc; break;
+                case 'wk': img = Globals().roiBlanc; break;
+              }
+              return img != null
+            ? Image(image: img, width: 24)
+            : const SizedBox.shrink();
+            }).toList(),
           ),
-          const SizedBox(height: 4),
-          Text("Pièces perdues :", style: TextStyle(color: Globals().blanc, fontSize: 12)),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: const []),
+              ),
+            ] else if (!isTop && capturedBlack.isNotEmpty) ...[
+              SizedBox(
+          height: 64,
+          child: Wrap(
+            alignment: WrapAlignment.end, // align right
+            spacing: 2,
+            runSpacing: 8,
+            children: capturedBlack.map((piece) {
+              ImageProvider? img;
+              switch (piece) {
+                case 'bp': img = Globals().pionBlanc; break;
+                case 'br': img = Globals().tourBlanc; break;
+                case 'bn': img = Globals().cavalierBlanc; break;
+                case 'bb': img = Globals().fouBlanc; break;
+                case 'bq': img = Globals().reineBlanc; break;
+                case 'bk': img = Globals().roiBlanc; break;
+              }
+              return img != null
+            ? Image(image: img, width: 24)
+            : const SizedBox.shrink();
+            }).toList(),
+          ),
+              ),
+            ],
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Globals().blanc)),
+                    Text('Classement: $ranking', style: TextStyle(color: Globals().blanc, fontSize: 13)),
+                  ],
+                ),
+                Text(formattedTime, style: TextStyle(fontSize: 21, color: Globals().rouge, fontWeight: FontWeight.bold)),
+              ],
+            ),
+
+          ),
+          const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  ElevatedButton(
+                  onPressed: onNul,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Globals().bleuClair,
+                    foregroundColor: Globals().blanc,
+                    shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text("Proposer le nul", style: TextStyle(fontSize: 12)),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  ElevatedButton(
+                  onPressed: onAbandon,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Globals().bleuFonce,
+                    foregroundColor: Globals().blanc,
+                    shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text("Abandonner", style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
+
+    if (isTop) {
+      return Transform.rotate(
+        angle: 3.1415926535897932, // 180 deg en radians
+        child: content,
+      );
+    } else {
+      return content;
+    }
   }
 
   @override
@@ -435,24 +532,25 @@ bool _isInCheck(bool white) {
       backgroundColor: Globals().backgroundColor,
       body: SafeArea(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildPlayerInfo(
-              name: joueurNoir,
-              ranking: classementNoir,
-              time: blackTime,
-              isTop: true,
-              onNul: _handleProposerNul,
-              onAbandon: () => _handleAbandon(isWhite: false),
-            ),
-            _buildBoard(),
-            _buildPlayerInfo(
-              name: joueurBlanc,
-              ranking: classementBlanc,
-              time: whiteTime,
-              isTop: false,
-              onNul: _handleProposerNul,
-              onAbandon: () => _handleAbandon(isWhite: true),
-            ),
+        _buildPlayerInfo(
+          name: joueurNoir,
+          ranking: classementNoir,
+          time: blackTime,
+          isTop: true,
+          onNul: _handleProposerNul,
+          onAbandon: () => _handleAbandon(isWhite: false),
+        ),
+        _buildBoard(),
+        _buildPlayerInfo(
+          name: joueurBlanc,
+          ranking: classementBlanc,
+          time: whiteTime,
+          isTop: false,
+          onNul: _handleProposerNul,
+          onAbandon: () => _handleAbandon(isWhite: true),
+        ),
           ],
         ),
       ),

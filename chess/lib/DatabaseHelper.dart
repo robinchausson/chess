@@ -83,7 +83,11 @@ class databaseHelper {
     final db = await database;
     final limitClause = limit > 0 ? 'LIMIT $limit' : '';
     return await db.rawQuery('''
-      SELECT joueur.id, joueur.pseudo, COUNT(victoire.id) AS nb_victoires
+      SELECT 
+        joueur.id, 
+        joueur.pseudo, 
+        COUNT(victoire.id) AS nb_victoires,
+        RANK() OVER (ORDER BY COUNT(victoire.id) DESC) AS classement
       FROM joueur
       LEFT JOIN victoire ON joueur.id = victoire.id_joueur
       GROUP BY joueur.id

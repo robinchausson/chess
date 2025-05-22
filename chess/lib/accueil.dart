@@ -10,9 +10,7 @@ class Accueil extends StatefulWidget {
 
 class _AccueilState extends State<Accueil> {
   String nomJoueurBlanc = ''; 
-  String nomJoueurNoir = ''; 
-  String classementBlanc = '';
-  String classementNoir = '';
+  String nomJoueurNoir = '';
   String selectedMode = 'normale'; // normale, blanc, noir
   int selectedTime = 3; // 3, 10, 60
 
@@ -120,7 +118,7 @@ class _AccueilState extends State<Accueil> {
                                 shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                                 ),
-                              padding: EdgeInsets.symmetric(vertical: 12), // Ajout du padding vertical
+                                padding: EdgeInsets.symmetric(vertical: 14), // Ajout du padding vertical
                               ),
                               child: Text('Partie Normale'),
                             ),
@@ -223,6 +221,7 @@ class _AccueilState extends State<Accueil> {
                             backgroundColor: selectedTime == 3
                               ? Globals().rouge
                               : Globals().blanc,
+                              padding: EdgeInsets.symmetric(vertical: 12),
                           ),
                           child: Text('3min'),
                           ),
@@ -242,8 +241,10 @@ class _AccueilState extends State<Accueil> {
                             backgroundColor: selectedTime == 10
                               ? Globals().rouge
                               : Globals().blanc,
+                              padding: EdgeInsets.symmetric(vertical: 12),
                           ),
                           child: Text('10min'),
+                          
                           ),
                         ),
                         SizedBox(
@@ -261,6 +262,7 @@ class _AccueilState extends State<Accueil> {
                             backgroundColor: selectedTime == 60
                               ? Globals().rouge
                               : Globals().blanc,
+                              padding: EdgeInsets.symmetric(vertical: 12),
                           ),
                           child: Text('60min'),
                           ),
@@ -323,10 +325,21 @@ class _AccueilState extends State<Accueil> {
                             if (joueur1 != null)
                               Padding(
                               padding: EdgeInsets.only(top: 20),
-                              child: Text(
-                                joueur1!['pseudo'],
-                                style: TextStyle(color: Colors.white, fontSize: 16),
-                              ),
+                                child: Column(
+                                children: [
+                                  Text(
+                                  joueur1!['pseudo'],
+                                  style: TextStyle(color: Colors.white, fontSize: 16),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                  joueur1!['classement'] != null
+                                    ? 'Classement: ${joueur1!['classement']}'
+                                    : 'null',
+                                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                                  ),
+                                ],
+                                ),
                               ),
                             if (joueur1 == null)
                               Padding(
@@ -376,9 +389,20 @@ class _AccueilState extends State<Accueil> {
                             if (joueur2 != null)
                               Padding(
                               padding: EdgeInsets.only(top: 20),
-                              child: Text(
-                                joueur2!['pseudo'],
-                                style: TextStyle(color: Colors.white, fontSize: 16),
+                              child: Column(
+                                children: [
+                                Text(
+                                  joueur2!['pseudo'],
+                                  style: TextStyle(color: Colors.white, fontSize: 16),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  joueur2!['classement'] != null
+                                    ? 'Classement: ${joueur2!['classement']}'
+                                    : 'null',
+                                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                                ),
+                                ],
                               ),
                               ),
                             if (joueur2 == null)
@@ -402,31 +426,41 @@ class _AccueilState extends State<Accueil> {
               ),
 
               // Bouton JOUER
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(
+                Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
                     context,
-                      '/jeu',
+                    '/jeu',
                     arguments: {
                       'joueurBlanc': joueur1!['pseudo'],
                       'joueurNoir': joueur2!['pseudo'],
-                      'classementBlanc': classementBlanc,
-                      'classementNoir': classementNoir,
-                      'temps': selectedTime, 
-                      'mode': selectedMode,   
+                      'classementBlanc': joueur1!['classement'],
+                      'classementNoir': joueur2!['classement'],
+                      'temps': selectedTime,
+                      'mode': selectedMode,
+                    },
+                    );
                   },
-                    
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Globals().rouge,
-                  backgroundColor: Globals().blanc,
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Globals().rouge,
+                    backgroundColor: Globals().blanc,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(
+                    'JOUER',
+                    style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Globals().rouge,
+                    ),
+                  ),
+                  ),
                 ),
-                child: Text(
-                  'Lancer la partie',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
+                )
             ],
           ),
         ),
