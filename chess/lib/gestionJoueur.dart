@@ -42,10 +42,13 @@ class _GestionJoueurState extends State<gestionJoueur> {
     final pseudo = ajoutCtrl.text.trim();
     if (pseudo.isEmpty) return;
     final id = await databaseHelper.instance.insertJoueur(pseudo);
+    await chargerJoueurs();
+    final classement = joueurs.length;
     final joueur = {
       'id': id,
       'pseudo': pseudo,
       'nb_victoires': 0,
+      'classement': classement
     };
     if (!mounted) return;
     Navigator.pop(context, joueur); // retour avec le nouveau joueur

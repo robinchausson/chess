@@ -83,13 +83,28 @@ class databaseHelper {
     final db = await database;
     final limitClause = limit > 0 ? 'LIMIT $limit' : '';
     return await db.rawQuery('''
-      SELECT joueur.id, joueur.pseudo, COUNT(victoire.id) AS nb_victoires
+      SELECT 
+        joueur.id, 
+        joueur.pseudo, 
+        COUNT(victoire.id) AS nb_victoires,
+        RANK() OVER (ORDER BY COUNT(victoire.id) DESC) AS classement
       FROM joueur
       LEFT JOIN victoire ON joueur.id = victoire.id_joueur
       GROUP BY joueur.id
       ORDER BY nb_victoires DESC
       $limitClause
     ''');
+  }
+
+  Future<void> joueurAGagne(int idJoueur, int idPartie) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+
+    await db.insert('victoire', {
+      'id_joueur': idJoueur,
+      'id_partie': idPartie,
+      'date': now,
+    });
   }
 
   Future<int> enregistrerVictoire(int idJoueur, int idPartie) async {
