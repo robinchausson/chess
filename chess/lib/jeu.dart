@@ -10,6 +10,135 @@ class Jeu extends StatefulWidget {
 }
 
 class _JeuState extends State<Jeu> {
+  bool _isKingInCheck(bool whiteKing) {
+    int kingRow = -1, kingCol = -1;
+    String king = whiteKing ? 'wk' : 'bk';
+
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+        if (board[r][c] == king) {
+          kingRow = r;
+          kingCol = c;
+        }
+      }
+    }
+    if (kingRow == -1 || kingCol == -1) return false; // roi non trouvé, pas d'échec
+
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+        String? piece = board[r][c];
+        if (piece == null || piece.startsWith(whiteKing ? 'w' : 'b')) continue;
+        List<List<int>> enemyMoves = _getValidMoves(r, c, ignoreTurn: true);
+        for (var move in enemyMoves) {
+          if (move[0] == kingRow && move[1] == kingCol) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _isCheckmate(bool whiteKing) {
+    if (!_isKingInCheck(whiteKing)) return false;
+
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+        String? piece = board[r][c];
+        if (piece == null || piece.startsWith(whiteKing ? 'b' : 'w')) continue;
+        List<List<int>> moves = _getValidMoves(r, c);
+        for (var move in moves) {
+          String? temp = board[move[0]][move[1]];
+          board[move[0]][move[1]] = piece;
+          board[r][c] = null;
+          bool stillCheck = _isKingInCheck(whiteKing);
+          board[r][c] = piece;
+          board[move[0]][move[1]] = temp;
+          if (!stillCheck) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  Future<void> _promotePawn(BuildContext context, int row, int col) async {
+    String? piece = board[row][col];
+    if (piece == null || piece[1] != 'p') return;
+
+    bool isWhite = piece.startsWith('w');
+    bool atEnd = (isWhite && row == 0) || (!isWhite && row == 7);
+    if (!atEnd) return;
+
+    // Liste des pièces capturées par l'adversaire (hors roi et pions)
+    List<String> availablePromotions = (isWhite ? capturedBlack : capturedWhite)
+        .where((p) => p[1] != 'k' && p[1] != 'p')
+        .toSet()
+        .toList();
+
+    // Si aucune pièce disponible, propose la reine par défaut
+    if (availablePromotions.isEmpty) {
+      board[row][col] = piece[0] + 'q';
+      return;
+    }
+
+    String? selected = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Promotion du pion'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: availablePromotions.map((p) {
+              String label;
+              switch (p[1]) {
+                case 'q': label = 'Reine'; break;
+                case 'r': label = 'Tour'; break;
+                case 'b': label = 'Fou'; break;
+                case 'n': label = 'Cavalier'; break;
+                default: label = p[1];
+              }
+              return ListTile(
+                leading: Image(
+                  image: _getPieceImage(piece[0] + p[1]),
+                  width: 32,
+                ),
+                title: Text(label),
+                onTap: () => Navigator.pop(context, p[1]),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+
+    // Si le joueur a choisi une pièce, on promeut
+    if (selected != null) {
+      board[row][col] = piece[0] + selected;
+    } else {
+      // Si le joueur annule, on promeut en reine par défaut
+      board[row][col] = piece[0] + 'q';
+    }
+  }
+
+  // Ajoute cette fonction utilitaire pour obtenir l'image d'une pièce
+  ImageProvider _getPieceImage(String piece) {
+    switch (piece) {
+      case 'wp': return Globals().pionBlanc;
+      case 'bp': return Globals().pionNoir;
+      case 'wr': return Globals().tourBlanc;
+      case 'br': return Globals().tourNoir;
+      case 'wn': return Globals().cavalierBlanc;
+      case 'bn': return Globals().cavalierNoir;
+      case 'wb': return Globals().fouBlanc;
+      case 'bb': return Globals().fouNoir;
+      case 'wq': return Globals().reineBlanc;
+      case 'bq': return Globals().reineNoir;
+      case 'wk': return Globals().roiBlanc;
+      case 'bk': return Globals().roiNoir;
+      default: return Globals().pionBlanc;
+    }
+  }
+
   List<List<String?>> board = List.generate(8, (i) => List.filled(8, null));
   bool isWhiteTurn = true;
   late String joueurBlanc;
@@ -110,9 +239,6 @@ class _JeuState extends State<Jeu> {
 
     bool isWhite = piece.startsWith('w');
     if (!ignoreTurn && isWhite != isWhiteTurn) return [];
- 
-    if (isWhite != isWhiteTurn) return [];
-
 
     List<List<int>> moves = [];
 
@@ -132,18 +258,27 @@ class _JeuState extends State<Jeu> {
       case 'p':
         int dir = isWhite ? -1 : 1;
         int startRow = isWhite ? 6 : 1;
-        if (board[row + dir][col] == null) moves.add([row + dir, col]);
-        if (row == startRow && board[row + dir][col] == null && board[row + 2 * dir][col] == null) {
+        // Avance d'une case
+        if (row + dir >= 0 && row + dir < 8 && board[row + dir][col] == null) {
+          moves.add([row + dir, col]);
+        }
+        // Avance de deux cases
+        if (row == startRow &&
+            row + dir >= 0 && row + dir < 8 &&
+            row + 2 * dir >= 0 && row + 2 * dir < 8 &&
+            board[row + dir][col] == null &&
+            board[row + 2 * dir][col] == null) {
           moves.add([row + 2 * dir, col]);
         }
+        // Prises diagonales
         for (int dCol in [-1, 1]) {
           int newCol = col + dCol;
-          if (newCol >= 0 && newCol < 8) {
-            String? target = board[row + dir][newCol];
-            if (target != null && target.startsWith(isWhite ? 'b' : 'w') && !target.endsWith('k')) { // interdit de prendre le roi
-              moves.add([row + dir, newCol]);
+          int newRow = row + dir;
+          if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+            String? target = board[newRow][newCol];
+            if (target != null && target.startsWith(isWhite ? 'b' : 'w') && !target.endsWith('k')) {
+              moves.add([newRow, newCol]);
             }
-            
           }
         }
         break;
@@ -203,7 +338,78 @@ class _JeuState extends State<Jeu> {
         break;
       case 'k':
         for (var d in [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]) {
-          tryAdd(row + d[0], col + d[1]);
+          int newRow = row + d[0], newCol = col + d[1];
+          if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) continue;
+          String? target = board[newRow][newCol];
+          // Le roi ne peut pas prendre un roi adverse
+          if (target != null && target.endsWith('k')) continue;
+
+          // Simule le déplacement du roi
+          String? original = board[newRow][newCol];
+          board[newRow][newCol] = board[row][col];
+          board[row][col] = null;
+
+          // Vérifie si la nouvelle case est attaquée
+          bool isAttacked = false;
+
+          // Vérification spéciale pour les cavaliers
+          List<List<int>> knightMoves = [
+            [2, 1], [2, -1], [-2, 1], [-2, -1],
+            [1, 2], [1, -2], [-1, 2], [-1, -2]
+          ];
+          for (var km in knightMoves) {
+            int kr = newRow + km[0], kc = newCol + km[1];
+            if (kr >= 0 && kr < 8 && kc >= 0 && kc < 8) {
+              String? enemy = board[kr][kc];
+              if (enemy != null && enemy == (isWhite ? 'bn' : 'wn')) {
+                isAttacked = true;
+                break;
+              }
+            }
+          }
+
+          // Vérification spéciale pour les pions adverses
+          if (!isAttacked) {
+            int pawnDir = isWhite ? -1 : 1; // direction d'attaque des pions adverses (CORRECTION ICI)
+            String pawnType = isWhite ? 'bp' : 'wp'; // pion adverse
+            for (int dc in [-1, 1]) {
+              int pr = newRow + pawnDir;
+              int pc = newCol + dc;
+              if (pr >= 0 && pr < 8 && pc >= 0 && pc < 8) {
+                String? enemy = board[pr][pc];
+                if (enemy != null && enemy == pawnType) {
+                  isAttacked = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          // Vérification pour les autres pièces
+          if (!isAttacked) {
+            for (int r = 0; r < 8; r++) {
+              for (int c = 0; c < 8; c++) {
+                String? enemy = board[r][c];
+                if (enemy != null && enemy.startsWith(isWhite ? 'b' : 'w')) {
+                  if (enemy.endsWith('k') || enemy.endsWith('n') || enemy.endsWith('p')) continue; // ignore roi, cavaliers, pions (déjà traités)
+                  var enemyMoves = _getValidMoves(r, c, ignoreTurn: true);
+                  if (enemyMoves.any((m) => m[0] == newRow && m[1] == newCol)) {
+                    isAttacked = true;
+                    break;
+                  }
+                }
+              }
+              if (isAttacked) break;
+            }
+          }
+
+          // Restaure le plateau
+          board[row][col] = board[newRow][newCol];
+          board[newRow][newCol] = original;
+
+          if (!isAttacked && (target == null || target.startsWith(isWhite ? 'b' : 'w'))) {
+            moves.add([newRow, newCol]);
+          }
         }
         break;
     }
@@ -223,7 +429,8 @@ class _JeuState extends State<Jeu> {
       board[move[0]][move[1]] = piece;
       board[row][col] = null;
 
-      bool stillInCheck = _isInCheck(piece!.startsWith('w'));
+      // Utilise _isKingInCheck pour vérifier si le roi du joueur est en échec après le coup
+      bool stillInCheck = _isKingInCheck(piece!.startsWith('w'));
 
       board[row][col] = piece;
       board[move[0]][move[1]] = backup;
@@ -335,46 +542,48 @@ class _JeuState extends State<Jeu> {
     }
 
    return GestureDetector(
-      onTap: () {
-        setState(() {
-          // Si une pièce est sélectionnée et la case cliquée fait partie des coups légaux
-          if (selectedRow != null && selectedCol != null) {
-            if (validMoves.any((m) => m[0] == row && m[1] == col)) {
-              String? target = board[row][col];
-              if (target != null && target.endsWith('k')) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Impossible de prendre le roi !")),
-                );
-                return;
-              }
-              // Ajoute la pièce capturée à la bonne liste
-              if (target != null) {
-                if (target.startsWith('w')) {
-                  capturedWhite.add(target);
-                } else if (target.startsWith('b')) {
-                  capturedBlack.add(target);
-                }
-              }
-              // Joue le coup
-              board[row][col] = board[selectedRow!][selectedCol!];
-              board[selectedRow!][selectedCol!] = null;
-              selectedRow = null;
-              selectedCol = null;
-              validMoves.clear();
-              isWhiteTurn = !isWhiteTurn;
+      onTap: () async {
+        bool showCheck = false;
 
-              // Affiche un message si le roi adverse est en échec
-              if (_isInCheck(!isWhiteTurn)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Roi en échec !"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+        // Si une pièce est sélectionnée et la case cliquée fait partie des coups légaux
+        if (selectedRow != null && selectedCol != null) {
+          if (validMoves.any((m) => m[0] == row && m[1] == col)) {
+            String? target = board[row][col];
+            if (target != null && target.endsWith('k')) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Impossible de prendre le roi !")),
+              );
+              return;
+            }
+            // Ajoute la pièce capturée à la bonne liste
+            if (target != null) {
+              if (target.startsWith('w')) {
+                capturedWhite.add(target);
+              } else if (target.startsWith('b')) {
+                capturedBlack.add(target);
               }
+            }
+            // Joue le coup
+            board[row][col] = board[selectedRow!][selectedCol!];
+            board[selectedRow!][selectedCol!] = null;
 
-              // Vérifie échec et mat ou pat pour l'adversaire
-              bool kingInCheck = _isInCheck(!isWhiteTurn);
+            // Promotion automatique si un pion atteint la dernière rangée
+            await _promotePawn(context, row, col);
+
+            selectedRow = null;
+            selectedCol = null;
+            validMoves.clear();
+            isWhiteTurn = !isWhiteTurn;
+
+            // Vérifie si le roi adverse est en échec APRÈS le coup
+            showCheck = _isInCheck(!isWhiteTurn);
+
+            // Vérifie échec et mat ou pat pour l'adversaire
+            if (_isCheckmate(!isWhiteTurn)) {
+              timer?.cancel();
+              _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
+            } else {
+              // Vérifie le pat (aucun coup légal mais pas d'échec)
               bool hasLegalMoves = false;
               for (int r = 0; r < 8; r++) {
                 for (int c = 0; c < 8; c++) {
@@ -386,60 +595,78 @@ class _JeuState extends State<Jeu> {
                   }
                 }
               }
-              if (kingInCheck && !hasLegalMoves) {
-                timer?.cancel();
-                _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
-              } else if (!kingInCheck && !hasLegalMoves) {
+              if (!hasLegalMoves) {
                 timer?.cancel();
                 _showEndDialog("Partie nulle", "Pat !");
               }
-              return;
             }
-          }
 
-          // Si on clique sur une pièce à soi, on ne propose QUE les coups légaux
-          if (board[row][col] != null &&
-              board[row][col]!.startsWith(isWhiteTurn ? 'w' : 'b')) {
-            // On ne permet la sélection que si la pièce a au moins un coup légal (qui ne laisse pas le roi en échec)
-            List<List<int>> legal = _getLegalMoves(row, col);
+            setState(() {}); // Met à jour l'UI après le coup
+
+            // Affiche le message d'échec APRÈS le build
+            if (showCheck) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Roi en échec !"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              });
+            }
+            return;
+          }
+        }
+
+        // Si on clique sur une pièce à soi, on ne propose QUE les coups légaux
+        if (board[row][col] != null &&
+            board[row][col]!.startsWith(isWhiteTurn ? 'w' : 'b')) {
+          List<List<int>> legal = _getLegalMoves(row, col);
+          setState(() {
             if (legal.isNotEmpty) {
               selectedRow = row;
               selectedCol = col;
               validMoves = legal;
             } else {
-              // Si aucun coup légal, on ne sélectionne pas la pièce
               selectedRow = null;
               selectedCol = null;
               validMoves.clear();
             }
+          });
+          if (_isInCheck(isWhiteTurn)) {
+            _showCheckInfo(isWhiteTurn);
+          }
 
-            // Si le joueur est en échec et n'a aucun coup légal, partie terminée
-            bool anyLegal = false;
-            for (int r = 0; r < 8; r++) {
-              for (int c = 0; c < 8; c++) {
-                if (board[r][c]?.startsWith(isWhiteTurn ? 'w' : 'b') ?? false) {
-                  if (_getLegalMoves(r, c).isNotEmpty) {
-                    anyLegal = true;
-                    break;
-                  }
+          // Si le joueur est en échec et n'a aucun coup légal, partie terminée
+          bool anyLegal = false;
+          for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+              if (board[r][c]?.startsWith(isWhiteTurn ? 'w' : 'b') ?? false) {
+                if (_getLegalMoves(r, c).isNotEmpty) {
+                  anyLegal = true;
+                  break;
                 }
               }
             }
-            if (!anyLegal) {
-              bool kingInCheck = _isInCheck(isWhiteTurn);
-              timer?.cancel();
-              if (kingInCheck) {
-                _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
-              } else {
-                _showEndDialog("Partie nulle", "Pat !");
-              }
+          }
+          if (!anyLegal) {
+            bool kingInCheck = _isInCheck(isWhiteTurn);
+            timer?.cancel();
+            if (kingInCheck) {
+              _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
+            } else {
+              _showEndDialog("Partie nulle", "Pat !");
             }
-          } else {
+          }
+        } else {
+          // Si aucune pièce sélectionnée ou case vide ou pièce adverse, on désélectionne tout
+          setState(() {
             selectedRow = null;
             selectedCol = null;
             validMoves.clear();
-          }
-        });
+          });
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -651,4 +878,17 @@ class _JeuState extends State<Jeu> {
     timer?.cancel();
     super.dispose();
   }
+
+  void _showCheckInfo(bool whiteInCheck) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(whiteInCheck ? "Le roi blanc est en échec !" : "Le roi noir est en échec !"),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  });
+}
+
 }
