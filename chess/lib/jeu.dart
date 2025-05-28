@@ -70,17 +70,13 @@ class _JeuState extends State<Jeu> {
     bool atEnd = (isWhite && row == 0) || (!isWhite && row == 7);
     if (!atEnd) return;
 
-    // Liste des pièces capturées par l'adversaire (hors roi et pions)
-    List<String> availablePromotions = (isWhite ? capturedBlack : capturedWhite)
-        .where((p) => p[1] != 'k' && p[1] != 'p')
-        .toSet()
-        .toList();
-
-    // Si aucune pièce disponible, propose la reine par défaut
-    if (availablePromotions.isEmpty) {
-      board[row][col] = piece[0] + 'q';
-      return;
-    }
+    // Liste des choix possibles pour la promotion
+    final List<Map<String, String>> choices = [
+      {'code': 'q', 'label': 'Reine'},
+      {'code': 'r', 'label': 'Tour'},
+      {'code': 'b', 'label': 'Fou'},
+      {'code': 'n', 'label': 'Cavalier'},
+    ];
 
     String? selected = await showDialog<String>(
       context: context,
@@ -89,22 +85,17 @@ class _JeuState extends State<Jeu> {
           title: const Text('Promotion du pion'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: availablePromotions.map((p) {
-              String label;
-              switch (p[1]) {
-                case 'q': label = 'Reine'; break;
-                case 'r': label = 'Tour'; break;
-                case 'b': label = 'Fou'; break;
-                case 'n': label = 'Cavalier'; break;
-                default: label = p[1];
-              }
+            children: choices.map((choice) {
+              String code = choice['code']!;
+              String label = choice['label']!;
+              String pieceCode = (isWhite ? 'w' : 'b') + code;
               return ListTile(
                 leading: Image(
-                  image: _getPieceImage(piece[0] + p[1]),
+                  image: _getPieceImage(pieceCode),
                   width: 32,
                 ),
                 title: Text(label),
-                onTap: () => Navigator.pop(context, p[1]),
+                onTap: () => Navigator.pop(context, code),
               );
             }).toList(),
           ),
@@ -589,7 +580,28 @@ class _JeuState extends State<Jeu> {
       onTap: () async {
         bool showCheck = false;
 
-        // Si une pièce est sélectionnée et la case cliquée fait partie des coups légaux
+        // 1. Si on clique sur une pièce à soi, on la sélectionne (même si une autre est déjà sélectionnée)
+        if (board[row][col] != null &&
+            board[row][col]!.startsWith(isWhiteTurn ? 'w' : 'b')) {
+          List<List<int>> legal = _getLegalMoves(row, col);
+          setState(() {
+            if (legal.isNotEmpty) {
+              selectedRow = row;
+              selectedCol = col;
+              validMoves = legal;
+            } else {
+              selectedRow = null;
+              selectedCol = null;
+              validMoves.clear();
+            }
+          });
+          if (_isInCheck(isWhiteTurn)) {
+            _showCheckInfo(isWhiteTurn);
+          }
+          return; // On arrête ici, pas de tentative de déplacement
+        }
+
+        // 2. Si une pièce est sélectionnée et la case cliquée fait partie des coups légaux
         if (selectedRow != null && selectedCol != null) {
           if (validMoves.any((m) => m[0] == row && m[1] == col)) {
             String? target = board[row][col];
@@ -634,55 +646,15 @@ class _JeuState extends State<Jeu> {
               return;
             }
           }
-
-        // Si on clique sur une pièce à soi, on ne propose QUE les coups légaux
-        } else if (board[row][col] != null &&
-            board[row][col]!.startsWith(isWhiteTurn ? 'w' : 'b')) {
-          List<List<int>> legal = _getLegalMoves(row, col);
-          setState(() {
-            if (legal.isNotEmpty) {
-              selectedRow = row;
-              selectedCol = col;
-              validMoves = legal;
-            } else {
-              selectedRow = null;
-              selectedCol = null;
-              validMoves.clear();
-            }
-          });
-          if (_isInCheck(isWhiteTurn)) {
-            _showCheckInfo(isWhiteTurn);
-          }
-
-          // Si le joueur est en échec et n'a aucun coup légal, partie terminée
-          bool anyLegal = false;
-          for (int r = 0; r < 8; r++) {
-            for (int c = 0; c < 8; c++) {
-              if (board[r][c]?.startsWith(isWhiteTurn ? 'w' : 'b') ?? false) {
-                if (_getLegalMoves(r, c).isNotEmpty) {
-                  anyLegal = true;
-                  break;
-                }
-              }
-            }
-          }
-          if (!anyLegal) {
-            bool kingInCheck = _isInCheck(isWhiteTurn);
-            timer?.cancel();
-            if (kingInCheck) {
-              _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
-            } else {
-              _showEndDialog("Partie nulle", "Pat !");
-            }
-          }
-        } else {
-          // Si aucune pièce sélectionnée ou case vide ou pièce adverse, on désélectionne tout
-          setState(() {
-            selectedRow = null;
-            selectedCol = null;
-            validMoves.clear();
-          });
+          return;
         }
+
+        // 3. Si aucune pièce sélectionnée ou case vide ou pièce adverse, on désélectionne tout
+        setState(() {
+          selectedRow = null;
+          selectedCol = null;
+          validMoves.clear();
+        });
       },
       child: Container(
         decoration: BoxDecoration(
