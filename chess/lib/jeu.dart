@@ -25,10 +25,25 @@ class _JeuState extends State<Jeu> {
     }
     if (kingRow == -1 || kingCol == -1) return false; // roi non trouvé, pas d'échec
 
+    // Vérification spéciale pour les cavaliers
+    List<List<int>> knightMoves = [
+      [2, 1], [2, -1], [-2, 1], [-2, -1],
+      [1, 2], [1, -2], [-1, 2], [-1, -2]
+    ];
+    String enemyKnight = whiteKing ? 'bn' : 'wn';
+    for (var d in knightMoves) {
+      int r = kingRow + d[0], c = kingCol + d[1];
+      if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+        if (board[r][c] == enemyKnight) return true;
+      }
+    }
+
+    // Vérification pour les autres pièces
     for (int r = 0; r < 8; r++) {
       for (int c = 0; c < 8; c++) {
         String? piece = board[r][c];
         if (piece == null || piece.startsWith(whiteKing ? 'w' : 'b')) continue;
+        if (piece.endsWith('n')) continue; // déjà traité
         List<List<int>> enemyMoves = _getValidMoves(r, c, ignoreTurn: true);
         for (var move in enemyMoves) {
           if (move[0] == kingRow && move[1] == kingCol) {
