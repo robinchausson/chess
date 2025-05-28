@@ -2,6 +2,7 @@ import 'package:chess/DatabaseHelper.dart';
 import 'package:flutter/material.dart';
 import 'globals.dart';
 import 'dart:async';
+import 'dart:math';
 
 class Jeu extends StatefulWidget {
   const Jeu({super.key});
@@ -153,7 +154,7 @@ class _JeuState extends State<Jeu> {
   late int classementBlanc;
   late int classementNoir;
   late int selectedTime;
-  late String mode;
+  late String mode = 'normale';
 
   Duration whiteTime = Duration.zero;
   Duration blackTime = Duration.zero;
@@ -171,10 +172,12 @@ class _JeuState extends State<Jeu> {
   Map<String, dynamic>? joueur1;
   Map<String, dynamic>? joueur2;
 
+  bool _boardInitialized = false;
+
   @override
   void initState() {
     super.initState();
-    _initBoard(); // seulement le plateau ici
+    // Ne rien faire ici pour le plateau
   }
 
   @override
@@ -190,11 +193,14 @@ class _JeuState extends State<Jeu> {
       classementBlanc = int.tryParse(args['classementBlanc'].toString()) ?? 0;
       classementNoir = int.tryParse(args['classementNoir'].toString()) ?? 0;
       mode = args['mode'] ?? 'normale';
-
       selectedTime = args['temps'] ?? 3;
-
       whiteTime = Duration(minutes: selectedTime);
       blackTime = Duration(minutes: selectedTime);
+
+      if (!_boardInitialized) {
+        _initBoard();
+        _boardInitialized = true;
+      }
 
       if (idPartie == null && joueur1 != null && joueur2 != null) {
         databaseHelper.instance.insertPartie(
@@ -213,11 +219,58 @@ class _JeuState extends State<Jeu> {
 
   void _initBoard() {
     List<String> order = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+    // Réinitialise le plateau
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+        board[r][c] = null;
+      }
+    }
     for (int i = 0; i < 8; i++) {
       board[1][i] = 'bp';
       board[6][i] = 'wp';
       board[0][i] = 'b${order[i]}';
       board[7][i] = 'w${order[i]}';
+    }
+
+    // Applique le mode si besoin
+    if (mode == 'blanc') {
+      _removeAdvantagePieces(isBlack: true);
+    } else if (mode == 'noir') {
+      _removeAdvantagePieces(isBlack: false);
+    }
+  }
+
+  // Retire 2 pions + 1 fou ou cavalier au hasard pour la couleur désavantagée
+  void _removeAdvantagePieces({required bool isBlack}) {
+    final rand = Random();
+    final pawn = isBlack ? 'bp' : 'wp';
+    final knight = isBlack ? 'bn' : 'wn';
+    final bishop = isBlack ? 'bb' : 'wb';
+
+    // Liste des positions des pions
+    List<List<int>> pawns = [];
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+        if (board[r][c] == pawn) pawns.add([r, c]);
+      }
+    }
+    pawns.shuffle(rand);
+    for (int i = 0; i < 2 && i < pawns.length; i++) {
+      board[pawns[i][0]][pawns[i][1]] = null;
+    }
+
+    // Liste des positions des fous et cavaliers
+    List<List<int>> minorPieces = [];
+    for (int r = 0; r < 8; r++) {
+      for (int c = 0; c < 8; c++) {
+        if (board[r][c] == knight || board[r][c] == bishop) {
+          minorPieces.add([r, c]);
+        }
+      }
+    }
+    if (minorPieces.isNotEmpty) {
+      minorPieces.shuffle(rand);
+      board[minorPieces.first[0]][minorPieces.first[1]] = null;
     }
   }
 
