@@ -1,3 +1,4 @@
+import 'package:chess/DatabaseHelper.dart';
 import 'package:flutter/material.dart';
 import 'globals.dart';
 
@@ -29,6 +30,27 @@ class _AccueilState extends State<Accueil> {
       });
     }
   }
+
+  Future<void> refreshJoueurs() async {
+  if (joueur1 != null) {
+    final res = await databaseHelper.instance.database;
+    final data = await res.query('joueur', where: 'id = ?', whereArgs: [joueur1!['id']]);
+    if (data.isNotEmpty) {
+      setState(() {
+        joueur1 = {...joueur1!, ...data.first};
+      });
+    }
+  }
+  if (joueur2 != null) {
+    final res = await databaseHelper.instance.database;
+    final data = await res.query('joueur', where: 'id = ?', whereArgs: [joueur2!['id']]);
+    if (data.isNotEmpty) {
+      setState(() {
+        joueur2 = {...joueur2!, ...data.first};
+      });
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -431,19 +453,28 @@ class _AccueilState extends State<Accueil> {
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                    context,
-                    '/jeu',
-                    arguments: {
-                      'joueurBlanc': joueur1!['pseudo'],
-                      'joueurNoir': joueur2!['pseudo'],
-                      'classementBlanc': joueur1!['classement'],
-                      'classementNoir': joueur2!['classement'],
-                      'temps': selectedTime,
-                      'mode': selectedMode,
-                    },
-                    );
+                  onPressed: () async {
+                    if (joueur1 != null && joueur2 != null) {
+                      await Navigator.pushNamed(
+                        context,
+                        '/jeu',
+                        arguments: {
+                          'joueur1': joueur1,
+                          'joueur2': joueur2,
+                          'joueurBlanc': joueur1!['pseudo'],
+                          'joueurNoir': joueur2!['pseudo'],
+                          'classementBlanc': joueur1!['classement'],
+                          'classementNoir': joueur2!['classement'],
+                          'temps': selectedTime,
+                          'mode': selectedMode,
+                        },
+                      );
+                      // Après la partie, on remet les joueurs à null
+                      setState(() {
+                        joueur1 = null;
+                        joueur2 = null;
+                      });
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Globals().rouge,

@@ -1,3 +1,4 @@
+import 'package:chess/DatabaseHelper.dart';
 import 'package:flutter/material.dart';
 import 'globals.dart';
 import 'dart:async';
@@ -159,6 +160,11 @@ class _JeuState extends State<Jeu> {
   List<String> capturedWhite = [];
   List<String> capturedBlack = [];
 
+  int? idPartie;
+
+  Map<String, dynamic>? joueur1;
+  Map<String, dynamic>? joueur2;
+
   @override
   void initState() {
     super.initState();
@@ -171,6 +177,8 @@ class _JeuState extends State<Jeu> {
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
 
     if (args != null) {
+      joueur1 = args['joueur1'];
+      joueur2 = args['joueur2'];
       joueurBlanc = args['joueurBlanc'] ?? 'Blanc';
       joueurNoir = args['joueurNoir'] ?? 'Noir';
       classementBlanc = int.tryParse(args['classementBlanc'].toString()) ?? 0;
@@ -181,6 +189,17 @@ class _JeuState extends State<Jeu> {
 
       whiteTime = Duration(minutes: selectedTime);
       blackTime = Duration(minutes: selectedTime);
+
+      if (idPartie == null && joueur1 != null && joueur2 != null) {
+        databaseHelper.instance.insertPartie(
+          joueur1!['id'],
+          joueur2!['id'],
+        ).then((id) {
+          setState(() {
+            idPartie = id;
+          });
+        });
+      }
     }
 
     _startTimer();
@@ -207,13 +226,16 @@ class _JeuState extends State<Jeu> {
 
         if (whiteTime.inSeconds <= 0 || blackTime.inSeconds <= 0) {
           timer?.cancel();
-          _showEndDialog('Temps écoulé', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
+          int? idVainqueur = isWhiteTurn
+              ? (joueur2 != null ? joueur2!['id'] : null)
+              : (joueur1 != null ? joueur1!['id'] : null);
+          _showEndDialog('Temps écoulé', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne', idVainqueur: idVainqueur);
         }
       });
     });
   }
 
-  void _showEndDialog(String title, String message) {
+  void _showEndDialog(String title, String message, {int? idVainqueur}) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -222,10 +244,20 @@ class _JeuState extends State<Jeu> {
         actions: [
           TextButton(
             child: const Text("OK"),
-            onPressed: () {
+            onPressed: () async {
+              if (idVainqueur != null && idPartie != null && joueur1 != null && joueur2 != null) {
+                await databaseHelper.instance.joueurAGagne(idVainqueur, idPartie!);
+                int? idPerdant;
+                var idJ1 = joueur1!['id'];
+                var idJ2 = joueur2!['id'];
+                if (idJ1 != null && idJ2 != null) {
+                  idPerdant = (idVainqueur == idJ1) ? idJ2 : idJ1;
+                  await databaseHelper.instance.joueurAPerdu(idPerdant!, idPartie!);
+                }
+              }
               Navigator.of(context)
                 ..pop()
-                ..pop(); // Sort de la page jeu
+                ..pop();
             },
           ),
         ],
@@ -264,8 +296,6 @@ class _JeuState extends State<Jeu> {
         }
         // Avance de deux cases
         if (row == startRow &&
-            row + dir >= 0 && row + dir < 8 &&
-            row + 2 * dir >= 0 && row + 2 * dir < 8 &&
             board[row + dir][col] == null &&
             board[row + 2 * dir][col] == null) {
           moves.add([row + 2 * dir, col]);
@@ -276,7 +306,10 @@ class _JeuState extends State<Jeu> {
           int newRow = row + dir;
           if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
             String? target = board[newRow][newCol];
-            if (target != null && target.startsWith(isWhite ? 'b' : 'w') && !target.endsWith('k')) {
+            if (ignoreTurn) {
+              // Pour la détection d'échec, le pion attaque toujours la diagonale
+              moves.add([newRow, newCol]);
+            } else if (target != null && target.startsWith(isWhite ? 'b' : 'w') && !target.endsWith('k')) {
               moves.add([newRow, newCol]);
             }
           }
@@ -341,6 +374,13 @@ class _JeuState extends State<Jeu> {
           int newRow = row + d[0], newCol = col + d[1];
           if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) continue;
           String? target = board[newRow][newCol];
+
+          // Correction : pour la détection d'échec, le roi attaque toutes les cases adjacentes, même si occupées par un roi adverse
+          if (ignoreTurn) {
+            moves.add([newRow, newCol]);
+            continue;
+          }
+
           // Le roi ne peut pas prendre un roi adverse
           if (target != null && target.endsWith('k')) continue;
 
@@ -370,10 +410,11 @@ class _JeuState extends State<Jeu> {
 
           // Vérification spéciale pour les pions adverses
           if (!isAttacked) {
-            int pawnDir = isWhite ? -1 : 1; // direction d'attaque des pions adverses (CORRECTION ICI)
-            String pawnType = isWhite ? 'bp' : 'wp'; // pion adverse
+            // Correction : la direction d'attaque dépend de la couleur du ROI (et non du pion adverse)
+            int pawnAttackDir = isWhite ? 1 : -1; // Si roi blanc, pions noirs attaquent vers le bas (1), sinon vers le haut (-1)
+            String pawnType = isWhite ? 'bp' : 'wp';
             for (int dc in [-1, 1]) {
-              int pr = newRow + pawnDir;
+              int pr = newRow + pawnAttackDir;
               int pc = newCol + dc;
               if (pr >= 0 && pr < 8 && pc >= 0 && pc < 8) {
                 String? enemy = board[pr][pc];
@@ -504,7 +545,10 @@ class _JeuState extends State<Jeu> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _showEndDialog("Victoire", isWhite ? "$joueurNoir gagne" : "$joueurBlanc gagne");
+              int? idVainqueur = isWhite
+                  ? (joueur2 != null ? joueur2!['id'] : null)
+                  : (joueur1 != null ? joueur1!['id'] : null);
+              _showEndDialog("Victoire", isWhite ? "$joueurNoir gagne" : "$joueurBlanc gagne", idVainqueur: idVainqueur);
             },
             child: const Text("Oui"),
           ),
@@ -581,46 +625,18 @@ class _JeuState extends State<Jeu> {
             // Vérifie échec et mat ou pat pour l'adversaire
             if (_isCheckmate(!isWhiteTurn)) {
               timer?.cancel();
-              _showEndDialog('Échec et mat', isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne');
-            } else {
-              // Vérifie le pat (aucun coup légal mais pas d'échec)
-              bool hasLegalMoves = false;
-              for (int r = 0; r < 8; r++) {
-                for (int c = 0; c < 8; c++) {
-                  if (board[r][c]?.startsWith(isWhiteTurn ? 'w' : 'b') ?? false) {
-                    if (_getLegalMoves(r, c).isNotEmpty) {
-                      hasLegalMoves = true;
-                      break;
-                    }
-                  }
-                }
-              }
-              if (!hasLegalMoves) {
-                timer?.cancel();
-                _showEndDialog("Partie nulle", "Pat !");
-              }
+              int? idVainqueur = isWhiteTurn
+                  ? (joueur2 != null ? joueur2!['id'] : null)
+                  : (joueur1 != null ? joueur1!['id'] : null);
+              String gagnant = isWhiteTurn ? '$joueurNoir gagne' : '$joueurBlanc gagne';
+              _showEndDialog('Échec et mat', gagnant, idVainqueur: idVainqueur);
+              setState(() {});
+              return;
             }
-
-            setState(() {}); // Met à jour l'UI après le coup
-
-            // Affiche le message d'échec APRÈS le build
-            if (showCheck) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Roi en échec !"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              });
-            }
-            return;
           }
-        }
 
         // Si on clique sur une pièce à soi, on ne propose QUE les coups légaux
-        if (board[row][col] != null &&
+        } else if (board[row][col] != null &&
             board[row][col]!.startsWith(isWhiteTurn ? 'w' : 'b')) {
           List<List<int>> legal = _getLegalMoves(row, col);
           setState(() {
@@ -677,7 +693,16 @@ class _JeuState extends State<Jeu> {
                   ? Border.all(color: Colors.green, width: 2)
                   : null,
         ),
-        child: Center(child: image != null ? Image(image: image, width: 42) : null),
+        child: Center(
+          child: image != null
+              ? (piece != null && piece.startsWith('b')
+                  ? Transform.rotate(
+                      angle: 3.1415926535897932, // 180 degrés en radians
+                      child: Image(image: image, width: 42),
+                    )
+                  : Image(image: image, width: 42))
+              : null,
+        ),
       ),
     );
   }

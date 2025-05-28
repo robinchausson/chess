@@ -107,6 +107,17 @@ class databaseHelper {
     });
   }
 
+  Future<void> joueurAPerdu(int idJoueur, int idPartie) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+
+    await db.insert('defaite', {
+      'id_joueur': idJoueur,
+      'id_partie': idPartie,
+      'date': now,
+    });
+  }
+
   Future<int> insertJoueur(String pseudo) async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
@@ -124,6 +135,16 @@ class databaseHelper {
 
     return await db.insert('joueur', {
       'pseudo': pseudo,
+      'date_creation': now,
+    });
+  }
+
+  Future<int> insertPartie(int idJoueur1, int idJoueur2) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return await db.insert('partie', {
+      'id_joueur1': idJoueur1,
+      'id_joueur2': idJoueur2,
       'date_creation': now,
     });
   }
